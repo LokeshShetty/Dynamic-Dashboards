@@ -5,6 +5,10 @@ import { useNavigate, useParams } from 'react-router'
 
 import { ChaosPanel } from '@/chaos/_components/chaos-panel'
 import { Button } from '@/components/ui/button'
+import { HostileBanner } from '@/hostile/_components/hostile-banner'
+import { useHostileParam } from '@/hostile/_hooks/use-hostile-param'
+import { findHostileConfig, HOSTILE_MANIFEST_TEXT } from '@/hostile/_lib/hostile-configs'
+import { manifestSchema } from '@/hostile/_lib/manifest.schema'
 import { useAppStore } from '@/lib/store'
 import { DashboardNotFound } from '@/storage/_components/dashboard-not-found'
 import { RevisionBanner } from '@/storage/_components/revision-banner'
@@ -26,6 +30,17 @@ export function DashboardRoute() {
   const navigate = useNavigate()
   const { state, refetch } = useDashboardRecord(id)
   const { revision, leaveRevision } = useRevisionParam()
+  const hostile = useHostileParam()
+
+  // A hostile file replaces the stored dashboard entirely: it is not saved, and nothing here
+  // can write it anywhere.
+  if (hostile.file !== null) {
+    return (
+      <Shell>
+        <HostileDashboard file={hostile.file} onClose={hostile.close} />
+      </Shell>
+    )
+  }
 
   if (state.kind === 'loading') {
     return (
@@ -174,9 +189,10 @@ function RevisionDashboard({
         onLeave={onLeave}
       />
 
-      <div className="pointer-events-none opacity-90">
+      <div>
         <DashboardView
           load={load}
+          readOnly
           saved={{
             version: revisionState.revision.version,
             savedAt: revisionState.revision.savedAt,
@@ -185,6 +201,45 @@ function RevisionDashboard({
           }}
         />
       </div>
+    </div>
+  )
+}
+
+/** One of the files in hostile-configs/, rendered exactly as a saved configuration would be. */
+function HostileDashboard({ file, onClose }: { file: string; onClose: () => void }) {
+  const config = findHostileConfig(file)
+  const load = useMemo(() => (config === null ? null : loadDashboardConfig(config.text)), [config])
+
+  const attacks = useMemo(() => {
+    const manifest = manifestSchema.safeParse(JSON.parse(HOSTILE_MANIFEST_TEXT))
+    if (!manifest.success) return null
+    return manifest.data.files.find((entry) => entry.file === file)?.attacks ?? null
+  }, [file])
+
+  if (config === null || load === null) {
+    return (
+      <DashboardErrorScreen
+        heading="No such hostile file"
+        message={`There is no file called "${file}" in hostile-configs.`}
+        action={<Button onClick={onClose}>Back to the stored dashboard</Button>}
+      />
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-4 p-4 md:p-6">
+      <HostileBanner file={file} attacks={attacks} onClose={onClose} />
+
+      <DashboardView
+        load={load}
+        readOnly
+        saved={{
+          version: 0,
+          savedAt: '',
+          config: config.text,
+          revisionCount: 0,
+        }}
+      />
     </div>
   )
 }

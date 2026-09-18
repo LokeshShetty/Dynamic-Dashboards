@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 3,
+  "id": "hostile",
+  "title": "Prototype pollution",
+  "version": 1,
+  "dataset": "claims",
+  "layout": { "columns": 12 },
+  "filters": [],
+  "__proto__": { "polluted": "at the root" },
+  "widgets": [
+    {
+      "id": "billed",
+      "kind": "metric",
+      "title": "Billed",
+      "layout": { "x": 0, "y": 0, "w": 3, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" },
+      "constructor": { "prototype": { "polluted": "inside a widget" } }
+    }
+  ]
+}

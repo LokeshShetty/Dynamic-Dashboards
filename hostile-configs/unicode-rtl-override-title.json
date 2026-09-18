@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 3,
+  "id": "hostile",
+  "title": "Revenue ‮gnidnep‬ report",
+  "version": 1,
+  "dataset": "claims",
+  "layout": {
+    "columns": 12
+  },
+  "filters": [],
+  "widgets": [
+    {
+      "id": "billed",
+      "kind": "metric",
+      "title": "Billed ‮)deggol( ‬ total",
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "w": 3,
+        "h": 1
+      },
+      "value": {
+        "field": "amount_cents",
+        "aggregate": "sum"
+      }
+    },
+    {
+      "id": "note",
+      "kind": "text",
+      "title": "Isolates and overrides",
+      "layout": {
+        "x": 3,
+        "y": 0,
+        "w": 9,
+        "h": 1
+      },
+      "body": "This line contains ⁦an isolate⁩ and ‭an override‬."
+    }
+  ]
+}

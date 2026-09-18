@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { DatabaseBackup, FlaskConical, RotateCcw, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { HostileConfigPicker } from '@/hostile/_components/hostile-config-picker'
 import { useAppStore } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import { dashboardStore } from '@/storage/_lib/dashboard-store'
@@ -147,6 +148,8 @@ export function ChaosPanel({ className }: { className?: string }) {
         </Button>
 
         <ChaosWorldControls />
+
+        <HostileConfigPicker />
 
         <Button size="sm" disabled={isReseeding} onClick={() => void resetToSeed()}>
           <DatabaseBackup aria-hidden="true" className="size-3" />

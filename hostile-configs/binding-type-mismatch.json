@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 3,
+  "id": "hostile",
+  "title": "Summing a text field",
+  "version": 1,
+  "dataset": "claims",
+  "layout": {
+    "columns": 12
+  },
+  "filters": [],
+  "widgets": [
+    {
+      "id": "status-sum",
+      "kind": "metric",
+      "title": "Metric status-sum",
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "w": 3,
+        "h": 1
+      },
+      "value": {
+        "field": "status",
+        "aggregate": "sum"
+      }
+    },
+    {
+      "id": "claims",
+      "kind": "metric",
+      "title": "Metric claims",
+      "layout": {
+        "x": 3,
+        "y": 0,
+        "w": 3,
+        "h": 1
+      },
+      "value": {
+        "field": "claim_id",
+        "aggregate": "count"
+      }
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 import type { DataFilter, DataResult } from '@/data/_types'
 
-import type { DashboardShell, Widget } from './_lib/config.schema'
+import type { DashboardFilter, DashboardShell, Widget } from './_lib/config.schema'
 
 /** One validation problem, with the path it was found at, ready to show to a user. */
 export type ConfigIssue = { path: string; message: string }
@@ -33,11 +33,20 @@ export type WidgetSlot =
   | { kind: 'duplicate-id'; index: number; id: string; firstIndex: number }
   | { kind: 'overlapping-layout'; index: number; id: string; overlapsId: string }
 
+/**
+ * A filter definition that did not validate. It is dropped rather than fatal: a filter the
+ * reader can see and change should not cost them the entire dashboard.
+ */
+export type DroppedFilter = { index: number; id: string | null; reason: string }
+
 /** The outcome of the whole load pipeline. Every branch can be rendered without a blank screen. */
 export type DashboardLoad =
   | {
       kind: 'loaded'
       shell: DashboardShell
+      /** The filters that validated, in configuration order. */
+      filters: DashboardFilter[]
+      droppedFilters: DroppedFilter[]
       slots: WidgetSlot[]
       /** The version the configuration was stored as, when a migration ran. */
       migratedFrom: number | null

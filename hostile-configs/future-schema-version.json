@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 99,
+  "id": "hostile",
+  "title": "Hostile configuration",
+  "version": 1,
+  "dataset": "claims",
+  "layout": {
+    "columns": 12
+  },
+  "filters": [],
+  "widgets": [
+    {
+      "id": "billed",
+      "kind": "metric",
+      "title": "Metric billed",
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "w": 3,
+        "h": 1
+      },
+      "value": {
+        "field": "amount_cents",
+        "aggregate": "sum"
+      }
+    }
+  ]
+}

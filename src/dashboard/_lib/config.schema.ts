@@ -230,7 +230,6 @@ const dashboardShellShape = {
   layout: z.strictObject({
     columns: z.number().int().min(1).max(CONFIG_LIMITS.MAX_GRID_COLUMNS),
   }),
-  filters: z.array(filterSchema).max(CONFIG_LIMITS.MAX_FILTERS),
 }
 
 function hasUniqueFilterIds(filters: ReadonlyArray<{ id: string }>) {
@@ -238,23 +237,21 @@ function hasUniqueFilterIds(filters: ReadonlyArray<{ id: string }>) {
 }
 
 /**
- * The dashboard without its widgets. Widgets are validated one at a time so that a single
- * malformed widget cannot invalidate every other widget on the dashboard.
+ * The dashboard without its widgets or its filters. Both are validated one entry at a time, so
+ * that a single malformed widget cannot invalidate the widgets around it and a single malformed
+ * filter cannot take the whole dashboard down with it.
  */
-export const dashboardShellSchema = z
-  .strictObject({
-    ...dashboardShellShape,
-    widgets: z.array(z.unknown()).max(CONFIG_LIMITS.MAX_WIDGETS),
-  })
-  .refine((shell) => hasUniqueFilterIds(shell.filters), {
-    message: 'duplicate filter id',
-    path: ['filters'],
-  })
+export const dashboardShellSchema = z.strictObject({
+  ...dashboardShellShape,
+  filters: z.array(z.unknown()).max(CONFIG_LIMITS.MAX_FILTERS),
+  widgets: z.array(z.unknown()).max(CONFIG_LIMITS.MAX_WIDGETS),
+})
 
 /** The whole configuration, used when writing a configuration rather than reading one. */
 export const dashboardConfigSchema = z
   .strictObject({
     ...dashboardShellShape,
+    filters: z.array(filterSchema).max(CONFIG_LIMITS.MAX_FILTERS),
     widgets: z.array(widgetSchema).max(CONFIG_LIMITS.MAX_WIDGETS),
   })
   .refine((config) => hasUniqueFilterIds(config.filters), {

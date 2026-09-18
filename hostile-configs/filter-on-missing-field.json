@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 3,
+  "id": "hostile",
+  "title": "Filtering on a field the dataset lost",
+  "version": 1,
+  "dataset": "claims",
+  "layout": {
+    "columns": 12
+  },
+  "filters": [
+    {
+      "id": "region",
+      "kind": "select",
+      "label": "Region",
+      "field": "region",
+      "options": [
+        {
+          "value": "emea",
+          "label": "EMEA"
+        }
+      ],
+      "defaultValue": "emea"
+    }
+  ],
+  "widgets": [
+    {
+      "id": "claims",
+      "kind": "metric",
+      "title": "Metric claims",
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "w": 3,
+        "h": 1
+      },
+      "value": {
+        "field": "claim_id",
+        "aggregate": "count"
+      }
+    }
+  ]
+}

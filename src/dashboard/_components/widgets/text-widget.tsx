@@ -1,5 +1,6 @@
 /* oxlint-disable react/no-array-index-key -- these lists are rebuilt from immutable
    render input on every pass and are never reordered, so the index is the stable identity. */
+import { BidiText } from '@/components/ui/bidi-text'
 import { cn } from '@/lib/utils'
 
 import type { TextWidget } from '../../_lib/config.schema'
@@ -60,16 +61,28 @@ function Inline({ tokens }: { tokens: InlineToken[] }) {
   return (
     <>
       {tokens.map((token, index) => {
-        if (token.kind === 'bold') return <strong key={index}>{token.value}</strong>
-        if (token.kind === 'italic') return <em key={index}>{token.value}</em>
+        if (token.kind === 'bold') {
+          return (
+            <strong key={index}>
+              <BidiText>{token.value}</BidiText>
+            </strong>
+          )
+        }
+        if (token.kind === 'italic') {
+          return (
+            <em key={index}>
+              <BidiText>{token.value}</BidiText>
+            </em>
+          )
+        }
         if (token.kind === 'code') {
           return (
             <code key={index} className="bg-surface-muted text-fg rounded px-1 text-xs">
-              {token.value}
+              <BidiText>{token.value}</BidiText>
             </code>
           )
         }
-        return <span key={index}>{token.value}</span>
+        return <BidiText key={index}>{token.value}</BidiText>
       })}
     </>
   )

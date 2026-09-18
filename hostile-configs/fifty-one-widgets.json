@@ -1,0 +1,368 @@
+{
+  "schemaVersion": 3,
+  "id": "hostile",
+  "title": "One widget past the limit",
+  "version": 1,
+  "dataset": "claims",
+  "layout": { "columns": 12 },
+  "filters": [],
+  "widgets": [
+    {
+      "id": "w0",
+      "kind": "metric",
+      "title": "Metric w0",
+      "layout": { "x": 0, "y": 0, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w1",
+      "kind": "metric",
+      "title": "Metric w1",
+      "layout": { "x": 1, "y": 0, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w2",
+      "kind": "metric",
+      "title": "Metric w2",
+      "layout": { "x": 2, "y": 0, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w3",
+      "kind": "metric",
+      "title": "Metric w3",
+      "layout": { "x": 3, "y": 0, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w4",
+      "kind": "metric",
+      "title": "Metric w4",
+      "layout": { "x": 4, "y": 0, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w5",
+      "kind": "metric",
+      "title": "Metric w5",
+      "layout": { "x": 5, "y": 0, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w6",
+      "kind": "metric",
+      "title": "Metric w6",
+      "layout": { "x": 6, "y": 0, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w7",
+      "kind": "metric",
+      "title": "Metric w7",
+      "layout": { "x": 7, "y": 0, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w8",
+      "kind": "metric",
+      "title": "Metric w8",
+      "layout": { "x": 8, "y": 0, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w9",
+      "kind": "metric",
+      "title": "Metric w9",
+      "layout": { "x": 9, "y": 0, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w10",
+      "kind": "metric",
+      "title": "Metric w10",
+      "layout": { "x": 10, "y": 0, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w11",
+      "kind": "metric",
+      "title": "Metric w11",
+      "layout": { "x": 11, "y": 0, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w12",
+      "kind": "metric",
+      "title": "Metric w12",
+      "layout": { "x": 0, "y": 1, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w13",
+      "kind": "metric",
+      "title": "Metric w13",
+      "layout": { "x": 1, "y": 1, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w14",
+      "kind": "metric",
+      "title": "Metric w14",
+      "layout": { "x": 2, "y": 1, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w15",
+      "kind": "metric",
+      "title": "Metric w15",
+      "layout": { "x": 3, "y": 1, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w16",
+      "kind": "metric",
+      "title": "Metric w16",
+      "layout": { "x": 4, "y": 1, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w17",
+      "kind": "metric",
+      "title": "Metric w17",
+      "layout": { "x": 5, "y": 1, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w18",
+      "kind": "metric",
+      "title": "Metric w18",
+      "layout": { "x": 6, "y": 1, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w19",
+      "kind": "metric",
+      "title": "Metric w19",
+      "layout": { "x": 7, "y": 1, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w20",
+      "kind": "metric",
+      "title": "Metric w20",
+      "layout": { "x": 8, "y": 1, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w21",
+      "kind": "metric",
+      "title": "Metric w21",
+      "layout": { "x": 9, "y": 1, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w22",
+      "kind": "metric",
+      "title": "Metric w22",
+      "layout": { "x": 10, "y": 1, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w23",
+      "kind": "metric",
+      "title": "Metric w23",
+      "layout": { "x": 11, "y": 1, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w24",
+      "kind": "metric",
+      "title": "Metric w24",
+      "layout": { "x": 0, "y": 2, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w25",
+      "kind": "metric",
+      "title": "Metric w25",
+      "layout": { "x": 1, "y": 2, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w26",
+      "kind": "metric",
+      "title": "Metric w26",
+      "layout": { "x": 2, "y": 2, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w27",
+      "kind": "metric",
+      "title": "Metric w27",
+      "layout": { "x": 3, "y": 2, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w28",
+      "kind": "metric",
+      "title": "Metric w28",
+      "layout": { "x": 4, "y": 2, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w29",
+      "kind": "metric",
+      "title": "Metric w29",
+      "layout": { "x": 5, "y": 2, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w30",
+      "kind": "metric",
+      "title": "Metric w30",
+      "layout": { "x": 6, "y": 2, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w31",
+      "kind": "metric",
+      "title": "Metric w31",
+      "layout": { "x": 7, "y": 2, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w32",
+      "kind": "metric",
+      "title": "Metric w32",
+      "layout": { "x": 8, "y": 2, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w33",
+      "kind": "metric",
+      "title": "Metric w33",
+      "layout": { "x": 9, "y": 2, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w34",
+      "kind": "metric",
+      "title": "Metric w34",
+      "layout": { "x": 10, "y": 2, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w35",
+      "kind": "metric",
+      "title": "Metric w35",
+      "layout": { "x": 11, "y": 2, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w36",
+      "kind": "metric",
+      "title": "Metric w36",
+      "layout": { "x": 0, "y": 3, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w37",
+      "kind": "metric",
+      "title": "Metric w37",
+      "layout": { "x": 1, "y": 3, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w38",
+      "kind": "metric",
+      "title": "Metric w38",
+      "layout": { "x": 2, "y": 3, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w39",
+      "kind": "metric",
+      "title": "Metric w39",
+      "layout": { "x": 3, "y": 3, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w40",
+      "kind": "metric",
+      "title": "Metric w40",
+      "layout": { "x": 4, "y": 3, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w41",
+      "kind": "metric",
+      "title": "Metric w41",
+      "layout": { "x": 5, "y": 3, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w42",
+      "kind": "metric",
+      "title": "Metric w42",
+      "layout": { "x": 6, "y": 3, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w43",
+      "kind": "metric",
+      "title": "Metric w43",
+      "layout": { "x": 7, "y": 3, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w44",
+      "kind": "metric",
+      "title": "Metric w44",
+      "layout": { "x": 8, "y": 3, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w45",
+      "kind": "metric",
+      "title": "Metric w45",
+      "layout": { "x": 9, "y": 3, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w46",
+      "kind": "metric",
+      "title": "Metric w46",
+      "layout": { "x": 10, "y": 3, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w47",
+      "kind": "metric",
+      "title": "Metric w47",
+      "layout": { "x": 11, "y": 3, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w48",
+      "kind": "metric",
+      "title": "Metric w48",
+      "layout": { "x": 0, "y": 4, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w49",
+      "kind": "metric",
+      "title": "Metric w49",
+      "layout": { "x": 1, "y": 4, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    },
+    {
+      "id": "w50",
+      "kind": "metric",
+      "title": "Metric w50",
+      "layout": { "x": 2, "y": 4, "w": 1, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" }
+    }
+  ]
+}

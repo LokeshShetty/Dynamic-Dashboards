@@ -1,0 +1,40 @@
+import { useId } from 'react'
+
+import { Bug } from 'lucide-react'
+
+import { useHostileParam } from '../_hooks/use-hostile-param'
+import { HOSTILE_CONFIGS } from '../_lib/hostile-configs'
+
+const SELECT_CLASS =
+  'border-border bg-surface-raised text-fg h-7 w-full rounded-md border px-1 text-xs'
+
+/**
+ * Opens one of the files in hostile-configs/ in place of the stored dashboard. The picker reads
+ * the same files the test runner does, so what a reviewer sees here is what the runner asserts.
+ */
+export function HostileConfigPicker() {
+  const controlId = useId()
+  const { file, open, close } = useHostileParam()
+
+  return (
+    <div className="flex flex-col gap-1">
+      <label htmlFor={controlId} className="text-fg-muted inline-flex items-center gap-1 text-xs">
+        <Bug aria-hidden="true" className="size-3" />
+        Load a hostile configuration
+      </label>
+      <select
+        id={controlId}
+        className={SELECT_CLASS}
+        value={file ?? ''}
+        onChange={(event) => (event.target.value === '' ? close() : open(event.target.value))}
+      >
+        <option value="">The stored dashboard</option>
+        {HOSTILE_CONFIGS.map((config) => (
+          <option key={config.name} value={config.name}>
+            {config.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  )
+}

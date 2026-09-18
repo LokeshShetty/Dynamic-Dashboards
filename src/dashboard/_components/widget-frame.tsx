@@ -11,6 +11,7 @@ import {
   Unlink,
 } from 'lucide-react'
 
+import { BidiText } from '@/components/ui/bidi-text'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -70,7 +71,9 @@ export function WidgetFrame<TResult>({
     >
       <header className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-col gap-1">
-          <h3 className="text-fg truncate text-sm font-semibold">{title}</h3>
+          <h3 className="text-fg truncate text-sm font-semibold">
+            <BidiText>{title}</BidiText>
+          </h3>
           <span className="flex flex-wrap items-center gap-1">
             {isTakenOver ? null : <HeaderBadge state={state} />}
             {unappliedFilters.length > 0 ? (

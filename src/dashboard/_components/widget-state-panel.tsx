@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 
 import type { LucideIcon } from 'lucide-react'
 
+import { BidiText } from '@/components/ui/bidi-text'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -63,7 +64,9 @@ export function WidgetStatePanel({
         {label}
       </WidgetBadge>
 
-      <p className="text-fg max-w-prose text-xs leading-relaxed text-balance">{message}</p>
+      <p className="text-fg max-w-prose text-xs leading-relaxed text-balance">
+        <BidiText>{message}</BidiText>
+      </p>
 
       {issues && issues.length > 0 ? (
         <ul className="text-fg-muted flex max-w-prose flex-col gap-0.5 text-xs">

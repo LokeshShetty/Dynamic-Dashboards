@@ -1,0 +1,245 @@
+{
+  "$comment": "The source of truth for the hostile configuration corpus. The runner in src/hostile-configs.test.ts asserts every file here behaves exactly as described.",
+  "files": [
+    {
+      "file": "not-json.txt",
+      "attacks": "text that is not JSON at all",
+      "expect": {
+        "outcome": "dashboard-error",
+        "code": "not-json"
+      },
+      "notes": "The parser's own message is shown, with the original text kept on screen."
+    },
+    {
+      "file": "root-is-array.json",
+      "attacks": "a JSON document whose root is an array",
+      "expect": {
+        "outcome": "dashboard-error",
+        "code": "not-an-object"
+      }
+    },
+    {
+      "file": "empty-object.json",
+      "attacks": "an object with nothing in it",
+      "expect": {
+        "outcome": "dashboard-error",
+        "code": "missing-schema-version"
+      }
+    },
+    {
+      "file": "missing-schema-version.json",
+      "attacks": "a complete looking dashboard with no schemaVersion",
+      "expect": {
+        "outcome": "dashboard-error",
+        "code": "missing-schema-version"
+      },
+      "notes": "The format cannot be identified, so nothing is guessed."
+    },
+    {
+      "file": "future-schema-version.json",
+      "attacks": "a format from a newer build",
+      "expect": {
+        "outcome": "unsupported-version",
+        "found": 99
+      },
+      "notes": "Opens read only with the raw JSON, rather than being rendered or overwritten."
+    },
+    {
+      "file": "v1-legacy.json",
+      "attacks": "an old format that must still open",
+      "expect": {
+        "outcome": "loads",
+        "migratedFrom": 1,
+        "filters": 0,
+        "droppedFilters": 0,
+        "widgets": ["valid", "valid", "valid", "valid", "valid"]
+      },
+      "notes": "The one file here that is expected to open completely fine: it migrates v1 to v2 to v3 on the way in."
+    },
+    {
+      "file": "unknown-widget-type.json",
+      "attacks": "a widget claiming a type that does not exist",
+      "expect": {
+        "outcome": "loads",
+        "migratedFrom": null,
+        "filters": 0,
+        "droppedFilters": 0,
+        "widgets": ["valid", "invalid"]
+      },
+      "notes": "Only that tile is invalid. The metric beside it still renders."
+    },
+    {
+      "file": "duplicate-ids.json",
+      "attacks": "two widgets claiming the same id",
+      "expect": {
+        "outcome": "loads",
+        "migratedFrom": null,
+        "filters": 0,
+        "droppedFilters": 0,
+        "widgets": ["valid", "duplicate-id"]
+      },
+      "notes": "The first keeps the id, the second renders as a duplicate-id tile rather than being dropped."
+    },
+    {
+      "file": "negative-and-infinite-layout.json",
+      "attacks": "layout numbers that are negative, infinite, fractional and a string",
+      "expect": {
+        "outcome": "loads",
+        "migratedFrom": null,
+        "filters": 0,
+        "droppedFilters": 0,
+        "widgets": ["invalid", "invalid", "invalid", "invalid"]
+      },
+      "notes": "1e999 parses to Infinity, which the schema refuses along with the rest."
+    },
+    {
+      "file": "overlapping-layout.json",
+      "attacks": "two widgets occupying the same cells",
+      "expect": {
+        "outcome": "loads",
+        "migratedFrom": null,
+        "filters": 0,
+        "droppedFilters": 0,
+        "widgets": ["valid", "overlapping-layout"]
+      },
+      "notes": "Deterministic: the first widget in the array keeps the cells, the later one is marked."
+    },
+    {
+      "file": "five-thousand-widgets.json",
+      "attacks": "a document large enough to be expensive to reject",
+      "expect": {
+        "outcome": "dashboard-error",
+        "code": "too-large"
+      },
+      "notes": "Refused on size before it is parsed at all."
+    },
+    {
+      "file": "fifty-one-widgets.json",
+      "attacks": "one widget more than the limit, in a small document",
+      "expect": {
+        "outcome": "dashboard-error",
+        "code": "too-many-widgets"
+      },
+      "notes": "Small enough to pass the size guard, so it is the widget count that stops it."
+    },
+    {
+      "file": "deep-nesting.json",
+      "attacks": "an object nested past the depth limit",
+      "expect": {
+        "outcome": "dashboard-error",
+        "code": "too-deep"
+      },
+      "notes": "The walk is iterative, so the document cannot exhaust the stack on its way to being rejected."
+    },
+    {
+      "file": "huge-string-title.json",
+      "attacks": "a single enormous string",
+      "expect": {
+        "outcome": "dashboard-error",
+        "code": "too-large"
+      }
+    },
+    {
+      "file": "title-201-chars.json",
+      "attacks": "a title one character past the limit",
+      "expect": {
+        "outcome": "dashboard-error",
+        "code": "invalid-dashboard"
+      },
+      "notes": "A dashboard level failure, because the title belongs to the dashboard rather than to a widget."
+    },
+    {
+      "file": "xss-title-and-text.json",
+      "attacks": "script tags, an onerror image and a javascript: link",
+      "expect": {
+        "outcome": "loads",
+        "migratedFrom": null,
+        "filters": 0,
+        "droppedFilters": 0,
+        "widgets": ["valid", "valid"]
+      },
+      "notes": "Renders as text. The markdown subset has no raw HTML and no links or images, so a javascript: URL has nowhere to go."
+    },
+    {
+      "file": "prototype-pollution.json",
+      "attacks": "__proto__ at the root and constructor.prototype inside a widget",
+      "expect": {
+        "outcome": "dashboard-error",
+        "code": "forbidden-key"
+      },
+      "notes": "Rejected by the shape guard before validation. The test asserts Object.prototype is untouched afterwards."
+    },
+    {
+      "file": "binding-missing-dataset.json",
+      "attacks": "a dashboard bound to a dataset that does not exist",
+      "expect": {
+        "outcome": "loads",
+        "migratedFrom": null,
+        "filters": 0,
+        "droppedFilters": 0,
+        "widgets": ["valid", "valid"]
+      },
+      "notes": "Valid as a configuration. Each tile reports an unresolvable binding when it asks for data."
+    },
+    {
+      "file": "binding-missing-field.json",
+      "attacks": "a metric bound to a field that does not exist",
+      "expect": {
+        "outcome": "loads",
+        "migratedFrom": null,
+        "filters": 0,
+        "droppedFilters": 0,
+        "widgets": ["valid", "valid"]
+      },
+      "notes": "Valid as a configuration. That tile says the field is not in the dataset; its neighbour still renders."
+    },
+    {
+      "file": "binding-type-mismatch.json",
+      "attacks": "a sum over a text field",
+      "expect": {
+        "outcome": "loads",
+        "migratedFrom": null,
+        "filters": 0,
+        "droppedFilters": 0,
+        "widgets": ["valid", "valid"]
+      },
+      "notes": "Valid as a configuration. The tile says the field is text where a number is needed, and shows no number."
+    },
+    {
+      "file": "filter-unknown-kind.json",
+      "attacks": "a filter kind that does not exist, beside a valid filter",
+      "expect": {
+        "outcome": "loads",
+        "migratedFrom": null,
+        "filters": 1,
+        "droppedFilters": 1,
+        "widgets": ["valid"]
+      },
+      "notes": "The bad filter is dropped with a notice in the filter bar. It is not a dashboard level failure."
+    },
+    {
+      "file": "filter-on-missing-field.json",
+      "attacks": "a filter naming a field the dataset does not have",
+      "expect": {
+        "outcome": "loads",
+        "migratedFrom": null,
+        "filters": 1,
+        "droppedFilters": 0,
+        "widgets": ["valid"]
+      },
+      "notes": "The filter is kept and the widgets say they are showing unfiltered data."
+    },
+    {
+      "file": "unicode-rtl-override-title.json",
+      "attacks": "right to left overrides and isolates in titles and body text",
+      "expect": {
+        "outcome": "loads",
+        "migratedFrom": null,
+        "filters": 0,
+        "droppedFilters": 0,
+        "widgets": ["valid", "valid"]
+      },
+      "notes": "Bidi control characters are stripped and the text renders inside bdi, so it cannot reorder the page around it."
+    }
+  ]
+}

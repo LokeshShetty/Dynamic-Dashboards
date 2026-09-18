@@ -5,10 +5,13 @@ import { Button } from '@/components/ui/button'
 import type { DashboardFilter } from '../../_lib/config.schema'
 import type { IgnoredParam } from '../../_lib/filter-params'
 import type { FilterValue, FilterValues } from '../../_lib/to-data-query'
+import type { DroppedFilter } from '../../_types'
 import { FilterControl } from './filter-control'
 
 type Props = {
   filters: ReadonlyArray<DashboardFilter>
+  /** Filter definitions that did not validate, named so the reader knows what is missing. */
+  dropped: ReadonlyArray<DroppedFilter>
   dataset: string
   values: FilterValues
   activeCount: number
@@ -19,6 +22,7 @@ type Props = {
 
 export function FilterBar({
   filters,
+  dropped,
   dataset,
   values,
   activeCount,
@@ -26,7 +30,7 @@ export function FilterBar({
   onChange,
   onReset,
 }: Props) {
-  if (filters.length === 0) return null
+  if (filters.length === 0 && dropped.length === 0) return null
 
   return (
     <section
@@ -57,6 +61,19 @@ export function FilterBar({
           </Button>
         </div>
       </div>
+
+      {dropped.length > 0 ? (
+        <output className="border-warning bg-warning-surface text-fg block rounded-md border p-2 text-xs">
+          <ul className="flex flex-col gap-1">
+            {dropped.map((entry) => (
+              <li key={`${entry.index}-${entry.id ?? 'unnamed'}`}>
+                The filter {entry.id === null ? `at position ${entry.index + 1}` : `“${entry.id}”`}{' '}
+                was dropped: {entry.reason}. Everything else still filters normally.
+              </li>
+            ))}
+          </ul>
+        </output>
+      ) : null}
 
       {ignored.length > 0 ? (
         <output className="border-warning bg-warning-surface text-fg block rounded-md border p-2 text-xs">

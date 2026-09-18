@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 3,
+  "id": "hostile",
+  "title": "A filter kind that does not exist",
+  "version": 1,
+  "dataset": "claims",
+  "layout": {
+    "columns": 12
+  },
+  "filters": [
+    {
+      "id": "payer",
+      "kind": "radio",
+      "label": "Payer",
+      "field": "payer",
+      "options": [
+        {
+          "value": "Cascade Mutual",
+          "label": "Cascade Mutual"
+        }
+      ]
+    },
+    {
+      "id": "status",
+      "kind": "select",
+      "label": "Status",
+      "field": "status",
+      "options": [
+        {
+          "value": "paid",
+          "label": "Paid"
+        }
+      ]
+    }
+  ],
+  "widgets": [
+    {
+      "id": "claims",
+      "kind": "metric",
+      "title": "Metric claims",
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "w": 3,
+        "h": 1
+      },
+      "value": {
+        "field": "claim_id",
+        "aggregate": "count"
+      }
+    }
+  ]
+}

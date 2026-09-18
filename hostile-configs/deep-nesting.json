@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 3,
+  "id": "hostile",
+  "title": "Nested past the depth limit",
+  "version": 1,
+  "dataset": "claims",
+  "layout": {
+    "columns": 12
+  },
+  "filters": [],
+  "widgets": [
+    {
+      "id": "billed",
+      "kind": "metric",
+      "title": "Metric billed",
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "w": 3,
+        "h": 1
+      },
+      "value": {
+        "field": "amount_cents",
+        "aggregate": "sum"
+      },
+      "format": {
+        "style": "plain",
+        "nested": {
+          "deeper": {
+            "deeper": {
+              "deeper": {
+                "deeper": {
+                  "deeper": {
+                    "deeper": {
+                      "deeper": {
+                        "deeper": {
+                          "deeper": {
+                            "deeper": {
+                              "deeper": {
+                                "deeper": {
+                                  "depth": 1
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

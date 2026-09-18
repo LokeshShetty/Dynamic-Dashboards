@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 3,
+  "id": "hostile",
+  "title": "<script>alert('dashboard')</script>",
+  "version": 1,
+  "dataset": "claims",
+  "layout": {
+    "columns": 12
+  },
+  "filters": [],
+  "widgets": [
+    {
+      "id": "billed",
+      "kind": "metric",
+      "title": "<img src=x onerror=alert('metric')>",
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "w": 3,
+        "h": 1
+      },
+      "value": {
+        "field": "amount_cents",
+        "aggregate": "sum"
+      }
+    },
+    {
+      "id": "note",
+      "kind": "text",
+      "title": "Notes with a payload",
+      "layout": {
+        "x": 3,
+        "y": 0,
+        "w": 9,
+        "h": 2
+      },
+      "body": "<script>alert('body')</script>\n\n- [click me](javascript:alert('link'))\n- <img src=x onerror=alert('img')>\n- **bold still works**"
+    }
+  ]
+}

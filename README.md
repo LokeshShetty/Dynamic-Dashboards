@@ -9,7 +9,9 @@ The interesting part is not the happy path. It is what happens when the configur
 malformed or hostile, when fields are renamed or change type under the renderer, when the data
 layer is slow or failing, and when two tabs edit the same dashboard at once.
 
-See [DESIGN.md](DESIGN.md) for the configuration format, the guarantees and the trade-offs.
+See [DESIGN.md](DESIGN.md) for the configuration format, the guarantees and the trade-offs, and
+[hostile-configs/](hostile-configs/README.md) for the configurations written to break it, each one
+run by the test suite.
 
 ## Getting started
 

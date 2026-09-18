@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 3,
+  "id": "hostile",
+  "title": "Bound to a dataset that does not exist",
+  "version": 1,
+  "dataset": "ledger_entries",
+  "layout": {
+    "columns": 12
+  },
+  "filters": [],
+  "widgets": [
+    {
+      "id": "billed",
+      "kind": "metric",
+      "title": "Metric billed",
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "w": 3,
+        "h": 1
+      },
+      "value": {
+        "field": "amount_cents",
+        "aggregate": "sum"
+      }
+    },
+    {
+      "id": "claims",
+      "kind": "metric",
+      "title": "Metric claims",
+      "layout": {
+        "x": 3,
+        "y": 0,
+        "w": 3,
+        "h": 1
+      },
+      "value": {
+        "field": "claim_id",
+        "aggregate": "count"
+      }
+    }
+  ]
+}

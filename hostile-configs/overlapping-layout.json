@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 3,
+  "id": "hostile",
+  "title": "Two widgets in one cell",
+  "version": 1,
+  "dataset": "claims",
+  "layout": {
+    "columns": 12
+  },
+  "filters": [],
+  "widgets": [
+    {
+      "id": "first",
+      "kind": "metric",
+      "title": "Metric first",
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 2
+      },
+      "value": {
+        "field": "amount_cents",
+        "aggregate": "sum"
+      }
+    },
+    {
+      "id": "second",
+      "kind": "metric",
+      "title": "Metric second",
+      "layout": {
+        "x": 3,
+        "y": 1,
+        "w": 6,
+        "h": 2
+      },
+      "value": {
+        "field": "amount_cents",
+        "aggregate": "sum"
+      }
+    }
+  ]
+}

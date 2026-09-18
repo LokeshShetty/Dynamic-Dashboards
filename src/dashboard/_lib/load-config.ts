@@ -1,9 +1,14 @@
 import { isRecord, isString } from '@/lib/guards'
 
 import { CONFIG_SCHEMA_VERSION } from '../_constants'
-import type { ConfigError, DashboardLoad, WidgetSlot } from '../_types'
-import { toConfigIssues } from './config-issues'
-import { dashboardShellSchema, widgetSchema } from './config.schema'
+import type { ConfigError, DashboardLoad, DroppedFilter, WidgetSlot } from '../_types'
+import { summarizeIssues, toConfigIssues } from './config-issues'
+import {
+  dashboardShellSchema,
+  filterSchema,
+  widgetSchema,
+  type DashboardFilter,
+} from './config.schema'
 import { guardRawText, guardShape } from './guard'
 import { markOverlappingWidgets } from './layout'
 import { migrateToCurrent, readSchemaVersion } from './migrate'
@@ -62,13 +67,52 @@ export function loadDashboardConfig(rawText: string): DashboardLoad {
     })
   }
 
+  const filters = toFilters(shell.data.filters)
+
   return {
     kind: 'loaded',
     shell: shell.data,
+    filters: filters.kept,
+    droppedFilters: filters.dropped,
     slots: markOverlappingWidgets(toWidgetSlots(shell.data.widgets)),
     migratedFrom: migrated.data.migratedFrom,
     rawText,
   }
+}
+
+/**
+ * Filters are validated one at a time, like widgets. One that does not validate, or that claims
+ * an id another filter already has, is dropped and reported: the filter bar says which one went
+ * and why, and every widget keeps rendering under the filters that do work.
+ */
+export function toFilters(entries: ReadonlyArray<unknown>) {
+  const kept: DashboardFilter[] = []
+  const dropped: DroppedFilter[] = []
+  const takenIds = new Set<string>()
+
+  entries.forEach((entry, index) => {
+    const result = filterSchema.safeParse(entry)
+    const id = isRecord(entry) && isString(entry.id) ? entry.id : null
+
+    if (!result.success) {
+      dropped.push({ index, id, reason: summarizeIssues(toConfigIssues(result.error)) })
+      return
+    }
+
+    if (takenIds.has(result.data.id)) {
+      dropped.push({
+        index,
+        id: result.data.id,
+        reason: `another filter already uses the id "${result.data.id}"`,
+      })
+      return
+    }
+
+    takenIds.add(result.data.id)
+    kept.push(result.data)
+  })
+
+  return { kept, dropped }
 }
 
 /** Reads an id off an unvalidated widget, only so a broken tile can be labelled. */

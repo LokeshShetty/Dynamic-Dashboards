@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "id": "legacy-hostile",
+  "name": "Claims operations, saved by an older build",
+  "source": "claims",
+  "widgets": [
+    {
+      "id": "billed",
+      "type": "metric",
+      "title": "Billed",
+      "field": "amount_cents",
+      "agg": "sum",
+      "format": "compact"
+    },
+    {
+      "id": "claims",
+      "type": "metric",
+      "title": "Claims",
+      "field": "claim_id",
+      "agg": "count"
+    },
+    {
+      "id": "trend",
+      "type": "chart",
+      "title": "Billed by day",
+      "chart": "line",
+      "x": "submitted_at",
+      "series": ["amount_cents"],
+      "agg": "sum"
+    },
+    {
+      "id": "recent",
+      "type": "table",
+      "title": "Recent claims",
+      "columns": ["claim_id", "submitted_at", "payer"],
+      "rows": 5
+    },
+    {
+      "id": "note",
+      "type": "text",
+      "title": "About",
+      "text": "Saved by the previous build. It still opens."
+    }
+  ]
+}

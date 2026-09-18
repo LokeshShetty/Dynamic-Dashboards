@@ -6,10 +6,11 @@ import { UnsupportedVersionScreen } from './unsupported-version-screen'
 type Props = {
   load: DashboardLoad
   saved: { version: number; savedAt: string; config: string; revisionCount: number }
+  readOnly?: boolean
 }
 
 /** Every way a configuration can arrive, and the screen that owes the reader an explanation. */
-export function DashboardView({ load, saved }: Props) {
+export function DashboardView({ load, saved, readOnly = false }: Props) {
   switch (load.kind) {
     case 'invalid':
       return (
@@ -34,9 +35,12 @@ export function DashboardView({ load, saved }: Props) {
       return (
         <LoadedDashboard
           shell={load.shell}
+          filters={load.filters}
+          droppedFilters={load.droppedFilters}
           slots={load.slots}
           migratedFrom={load.migratedFrom}
           saved={saved}
+          readOnly={readOnly}
         />
       )
   }

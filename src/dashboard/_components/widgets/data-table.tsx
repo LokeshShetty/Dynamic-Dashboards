@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Unlink } from 'lucide-react'
 
+import { BidiText } from '@/components/ui/bidi-text'
 import { Button } from '@/components/ui/button'
 import type { ResolvedSort } from '@/data/_types'
 import { cn } from '@/lib/utils'
@@ -71,7 +72,7 @@ export function DataTable({ columns, rows, matchedRows, sort, pageSize }: Props)
                       onClick={() => toggleSort(column.name)}
                       className="hover:text-fg inline-flex items-center gap-1"
                     >
-                      {column.label}
+                      <BidiText>{column.label}</BidiText>
                       <SortIcon column={column} sortState={sortState} />
                     </button>
                   ) : (
@@ -104,7 +105,7 @@ export function DataTable({ columns, rows, matchedRows, sort, pageSize }: Props)
                     )}
                   >
                     {column.kind === 'ok' ? (
-                      column.format(row[column.name] ?? null)
+                      <BidiText>{column.format(row[column.name] ?? null)}</BidiText>
                     ) : (
                       <span className="text-fg-subtle" title={column.reason}>
                         —<span className="sr-only">unresolvable column</span>

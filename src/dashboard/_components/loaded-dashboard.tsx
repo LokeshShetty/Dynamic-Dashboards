@@ -3,6 +3,7 @@ import { useEffect, useMemo } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Database, History, Pencil, RefreshCw, Save } from 'lucide-react'
 
+import { BidiText } from '@/components/ui/bidi-text'
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/lib/store'
 import { isDraftDirty } from '@/lib/store/slices/draft.slice'
@@ -12,9 +13,9 @@ import { useSaveNotices } from '@/storage/_hooks/use-save-notices'
 
 import { useEditMode } from '../_hooks/use-edit-mode'
 import { useFilterValues } from '../_hooks/use-filter-values'
-import type { DashboardShell } from '../_lib/config.schema'
+import type { DashboardFilter, DashboardShell } from '../_lib/config.schema'
 import { toDataFilters } from '../_lib/to-data-query'
-import type { WidgetSlot } from '../_types'
+import type { DroppedFilter, WidgetSlot } from '../_types'
 import { DashboardGrid } from './dashboard-grid'
 import { DashboardTransfer } from './dashboard-transfer'
 import { EditorGrid } from './editor/editor-grid'
@@ -22,15 +23,27 @@ import { FilterBar } from './filters/filter-bar'
 
 type Props = {
   shell: DashboardShell
+  filters: DashboardFilter[]
+  droppedFilters: DroppedFilter[]
   slots: WidgetSlot[]
   migratedFrom: number | null
   /** What the store says about this dashboard, so the header can show where the save is. */
   saved: { version: number; savedAt: string; config: string; revisionCount: number }
+  /** Revisions and hostile files are shown, not edited: no editing, no import, no export. */
+  readOnly?: boolean
 }
 
-export function LoadedDashboard({ shell, slots, migratedFrom, saved }: Props) {
+export function LoadedDashboard({
+  shell,
+  filters,
+  droppedFilters,
+  slots,
+  migratedFrom,
+  saved,
+  readOnly = false,
+}: Props) {
   const queryClient = useQueryClient()
-  const { values, activeCount, ignored, setValue, reset } = useFilterValues(shell.filters)
+  const { values, activeCount, ignored, setValue, reset } = useFilterValues(filters)
   const { isEditing, enterEditMode, leaveEditMode } = useEditMode()
   const startDraft = useAppStore((state) => state.startDraft)
   const discardDraft = useAppStore((state) => state.discardDraft)
@@ -53,10 +66,10 @@ export function LoadedDashboard({ shell, slots, migratedFrom, saved }: Props) {
 
   const filterContext = useMemo(
     () => ({
-      applied: toDataFilters(shell.filters, values),
-      labels: Object.fromEntries(shell.filters.map((filter) => [filter.field, filter.label])),
+      applied: toDataFilters(filters, values),
+      labels: Object.fromEntries(filters.map((filter) => [filter.field, filter.label])),
     }),
-    [shell.filters, values],
+    [filters, values],
   )
 
   const refreshAll = () => {
@@ -67,7 +80,9 @@ export function LoadedDashboard({ shell, slots, migratedFrom, saved }: Props) {
     <div className="mx-auto flex max-w-[110rem] flex-col gap-4 p-4 md:p-6">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="text-fg text-xl font-semibold">{shell.title}</h1>
+          <h1 className="text-fg text-xl font-semibold">
+            <BidiText>{shell.title}</BidiText>
+          </h1>
           <p className="text-fg-muted flex flex-wrap items-center gap-3 text-xs">
             <span className="inline-flex items-center gap-1">
               <Database aria-hidden="true" className="size-3" />
@@ -93,12 +108,14 @@ export function LoadedDashboard({ shell, slots, migratedFrom, saved }: Props) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <DashboardTransfer
-            dashboardId={shell.id}
-            config={saved.config}
-            onImported={enterEditMode}
-          />
-          {isEditing ? null : (
+          {readOnly ? null : (
+            <DashboardTransfer
+              dashboardId={shell.id}
+              config={saved.config}
+              onImported={enterEditMode}
+            />
+          )}
+          {isEditing || readOnly ? null : (
             <Button onClick={enterEditMode}>
               <Pencil aria-hidden="true" className="size-4" />
               Edit dashboard
@@ -122,7 +139,8 @@ export function LoadedDashboard({ shell, slots, migratedFrom, saved }: Props) {
       )}
 
       <FilterBar
-        filters={shell.filters}
+        filters={filters}
+        dropped={droppedFilters}
         dataset={shell.dataset}
         values={values}
         activeCount={activeCount}
@@ -131,7 +149,7 @@ export function LoadedDashboard({ shell, slots, migratedFrom, saved }: Props) {
         onReset={reset}
       />
 
-      {isEditing ? (
+      {isEditing && !readOnly ? (
         <EditorGrid
           dashboardId={shell.id}
           filters={filterContext}

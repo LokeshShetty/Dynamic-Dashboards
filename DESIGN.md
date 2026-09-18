@@ -27,7 +27,7 @@ Three failure modes the promise rules out:
 | 5. Dashboard filters                      | Done        |
 | 6. Widget editor                          | Done        |
 | 7. Persistence, revisions, conflicts      | Done        |
-| 8. Hostile configuration corpus           | Not started |
+| 8. Hostile configuration corpus           | Done        |
 | 9. Documentation and self-review          | Not started |
 
 ## Shape of the system (planned)
@@ -544,6 +544,43 @@ An unknown id is a dead end with a way forward: _no dashboard with id X_, and a 
 creates an empty one. On a first visit the three shipped configurations are seeded, two of them
 deliberately in older formats, and the chaos panel can reset storage back to them.
 
+## The hostile corpus
+
+`hostile-configs/` at the repository root holds 23 configurations written to break the renderer,
+with `manifest.json` describing what each one attacks and exactly what it should do. It is not a
+folder of examples: `src/hostile-configs.test.ts` reads the folder, asserts that every file is
+described in the manifest and named in the README, runs each one through `loadDashboardConfig`,
+checks the outcome against the manifest, and afterwards asserts that `Object.prototype` is
+untouched. A file with no manifest entry fails the run, and so does a manifest entry with no file.
+
+The app reads **the same files**, through the same module: the chaos panel has a picker that
+opens any of them in place of the stored dashboard, read only, with a banner saying it is a
+hostile file and not saved. A fixture that had drifted from what the app loads would be worse
+than no fixture.
+
+What they cover: text that is not JSON, a root that is not an object, a missing and a future
+`schemaVersion`, an old format that must still open, unknown widget types, duplicate ids, layout
+numbers that are negative, infinite, fractional and stringly typed, overlapping layouts, a
+document too large to parse, one widget past the count limit, nesting past the depth limit, a
+title one character over, script tags and `javascript:` links, `__proto__` at the root and
+`constructor.prototype` inside a widget, bindings to datasets, fields and types that do not
+exist, a filter kind that does not exist, a filter on a field the dataset lost, and right to left
+overrides in titles and body text.
+
+**`v1-legacy.json` is the only one expected to open completely fine**, because it is the
+migration story: written in the oldest supported format, it comes forward to v3 on the way in.
+
+Four behaviours the corpus forced, which now hold:
+
+- An invalid **filter** definition is dropped with a notice in the filter bar, not a dashboard
+  level failure. This reverses the phase 2 decision, and the decision log says so.
+- **Overlapping layouts** mark the later widget invalid, deterministically by array order, so the
+  same file always produces the same dashboard.
+- **Titles and configuration text render inside `<bdi>` with bidi control characters stripped**, so
+  a title carrying a right to left override cannot reorder the page around it.
+- The **markdown subset has no raw HTML, no links and no images**, so a `javascript:` URL in a text
+  widget has nowhere to go: it renders as the characters it is.
+
 ## UI primitives
 
 There is no component library in this project. Every control is a native element styled with
@@ -587,17 +624,17 @@ dismiss button.
 
 ### Phase 2: configuration layer
 
-| Decision                                                         | Why                                                                                                                                                                                                                                                |
-| ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Widgets validated one at a time, dashboard shell separately      | One malformed widget must not invalidate the widgets around it. The cost is that `widgets` is typed as `unknown[]` in the shell schema and narrowed per entry.                                                                                     |
-| Unknown keys rejected rather than stripped                       | A silently ignored `aggregate` or `format` produces a number that looks right and is not what the author asked for. The cost is that a future format's extra key fails on an older build, which is what the `schemaVersion` gate is for.           |
-| Duplicate ids render as an error tile, not dropped or merged     | Dropping hides half the author's dashboard. Rendering both makes two tiles fight over one identity in the URL, in the editor and in React keys.                                                                                                    |
-| Newer `schemaVersion` opens read only with the raw JSON          | Rendering a format we do not understand is the definition of showing something untrue. Read only keeps the configuration recoverable instead of unopenable.                                                                                        |
-| Bad filter definitions fail at dashboard level                   | A filter applies to many widgets. Dropping it and carrying on would show every widget unfiltered data under a filter bar that claims otherwise. The cost is that one bad filter blocks the whole dashboard, which the error screen states exactly. |
-| Migrations may supply presentation defaults, never data bindings | A missing layout can be defaulted without lying. A missing aggregate cannot: guessing `sum` would render a confident wrong number. The v1 chart with no aggregate stays invalid on purpose.                                                        |
-| Reserved keys rejected, and bindings may not name them           | `row['__proto__']` hands a widget the prototype chain instead of data. Rejecting at the document level and at the binding level closes both doors.                                                                                                 |
-| The only entry point takes text, not an object                   | The size guard needs the text, and one path means the editor preview and the stored configuration cannot take different routes to different verdicts.                                                                                              |
-| Errors are returned, never thrown                                | Every failure has to reach a screen. A thrown error in a loader is one refactor away from a blank page.                                                                                                                                            |
+| Decision                                                                | Why                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Widgets validated one at a time, dashboard shell separately             | One malformed widget must not invalidate the widgets around it. The cost is that `widgets` is typed as `unknown[]` in the shell schema and narrowed per entry.                                                                                                                                                                                                                                                           |
+| Unknown keys rejected rather than stripped                              | A silently ignored `aggregate` or `format` produces a number that looks right and is not what the author asked for. The cost is that a future format's extra key fails on an older build, which is what the `schemaVersion` gate is for.                                                                                                                                                                                 |
+| Duplicate ids render as an error tile, not dropped or merged            | Dropping hides half the author's dashboard. Rendering both makes two tiles fight over one identity in the URL, in the editor and in React keys.                                                                                                                                                                                                                                                                          |
+| Newer `schemaVersion` opens read only with the raw JSON                 | Rendering a format we do not understand is the definition of showing something untrue. Read only keeps the configuration recoverable instead of unopenable.                                                                                                                                                                                                                                                              |
+| Bad filter definitions fail at dashboard level, **reversed in phase 8** | Originally a filter that did not validate failed the whole dashboard, on the grounds that widgets would otherwise show unfiltered data under a bar that claimed to filter. Building the hostile corpus made the cost obvious: one mistyped filter kind cost the reader every widget. Filters are now validated one at a time and a bad one is dropped with a notice in the bar, which is the same treatment widgets get. |
+| Migrations may supply presentation defaults, never data bindings        | A missing layout can be defaulted without lying. A missing aggregate cannot: guessing `sum` would render a confident wrong number. The v1 chart with no aggregate stays invalid on purpose.                                                                                                                                                                                                                              |
+| Reserved keys rejected, and bindings may not name them                  | `row['__proto__']` hands a widget the prototype chain instead of data. Rejecting at the document level and at the binding level closes both doors.                                                                                                                                                                                                                                                                       |
+| The only entry point takes text, not an object                          | The size guard needs the text, and one path means the editor preview and the stored configuration cannot take different routes to different verdicts.                                                                                                                                                                                                                                                                    |
+| Errors are returned, never thrown                                       | Every failure has to reach a screen. A thrown error in a loader is one refactor away from a blank page.                                                                                                                                                                                                                                                                                                                  |
 
 ### Phase 3: data layer
 
@@ -675,6 +712,17 @@ dismiss button.
 | Another tab's save is news, never an action                   | Reloading on someone's behalf is the one move that can destroy unsaved work, so the banner offers reload only when there is no draft, and comparison when there is.    |
 | Import lands as a draft, never as a save                      | A file is input from outside. It goes through the loader and then in front of a person, rather than straight over a stored dashboard.                                  |
 | The store is an interface with an AbortSignal on every method | The localStorage implementation is a stand in for a backend. Writing the seams now means a REST version replaces one file rather than the UI.                          |
+
+### Phase 8: the hostile corpus
+
+| Decision                                                       | Why                                                                                                                                                                 |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The corpus is run, not just shipped                            | A folder of nasty files proves nothing on its own. The runner turns each file into an assertion about what the loader does with it.                                 |
+| The manifest is the source of truth, and the README follows it | Two lists that can disagree will. The runner fails if a file is missing from either, so they stay in step or the build stops.                                       |
+| The app and the runner read the same files                     | A fixture copied into the app would drift from the one the test asserts on, and the drift would be invisible until it mattered.                                     |
+| An invalid filter is dropped rather than fatal                 | Reversing a phase 2 decision: one mistyped filter kind costing every widget on the dashboard is a worse failure than the unfiltered data the original rule avoided. |
+| Bidi controls are stripped and text is isolated in bdi         | A right to left override in a title rearranges the line around it, so a widget can be made to read as something it is not, with no script involved at all.          |
+| The prototype check runs after the whole corpus                | Pollution is stateful: it is not enough for each file to be rejected, the process has to be clean once all of them have been through it.                            |
 
 ## Open questions
 

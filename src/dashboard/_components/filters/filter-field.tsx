@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 
+import { BidiText } from '@/components/ui/bidi-text'
 import { cn } from '@/lib/utils'
 
 type Props = {
@@ -26,7 +27,9 @@ export function FilterField({
   if (labelling === 'group') {
     return (
       <fieldset className={cn('flex min-w-44 flex-col gap-1 border-0 p-0', className)}>
-        <legend className="text-fg-muted mb-1 text-xs font-medium">{label}</legend>
+        <legend className="text-fg-muted mb-1 text-xs font-medium">
+          <BidiText>{label}</BidiText>
+        </legend>
         {children}
         {note}
       </fieldset>
@@ -36,7 +39,7 @@ export function FilterField({
   return (
     <div className={cn('flex min-w-44 flex-col gap-1', className)}>
       <label htmlFor={controlId} className="text-fg-muted text-xs font-medium">
-        {label}
+        <BidiText>{label}</BidiText>
       </label>
       {children}
       {note}
