@@ -1,8 +1,9 @@
 import { create } from 'zustand'
 
 import { createChaosSlice, type ChaosSlice } from './slices/chaos.slice'
+import { createToastSlice, type ToastSlice } from './slices/toast.slice'
 
-export type AppStore = ChaosSlice
+export type AppStore = ChaosSlice & ToastSlice
 
 /**
  * One store. The data layer reads it outside React with useAppStore.getState(), which is why
@@ -11,4 +12,5 @@ export type AppStore = ChaosSlice
  */
 export const useAppStore = create<AppStore>()((...args) => ({
   ...createChaosSlice(...args),
+  ...createToastSlice(...args),
 }))

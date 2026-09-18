@@ -400,6 +400,33 @@ widget on the dashboard, turning a filter problem into a blank page. The badge i
 weaker option honest: it is on the tile, in the header, in words, and it says the data is
 unfiltered.
 
+## UI primitives
+
+There is no component library in this project. Every control is a native element styled with
+Tailwind tokens, and the handful of things with no native equivalent are written by hand into
+`src/components/ui/` in the shadcn style, one file per primitive.
+
+| Surface               | Built from                                                         |
+| --------------------- | ------------------------------------------------------------------ |
+| Select filter         | `<select>`                                                         |
+| Multi-select filter   | Toggle `<button aria-pressed>` chips inside a `<fieldset><legend>` |
+| Date range filter     | Two `<input type="date">`                                          |
+| Search filter         | `<input type="search">`                                            |
+| Widget configuration  | `<details>` and `<summary>`                                        |
+| Table                 | `<table>` with `aria-sort` and header buttons                      |
+| Modal, confirm dialog | `<dialog>` with `showModal()`, wrapped in `src/components/ui`      |
+| Toasts                | Two `aria-live` regions over a Zustand slice                       |
+
+The dialog wrapper adds what the element does not do on its own: closing on a backdrop click,
+returning focus to whatever opened it, locking the page behind it, and wiring `aria-labelledby`
+and `aria-describedby`. The element itself supplies the top layer, the inert background, the
+focus trap and Escape, which is the part that is hardest to hand roll correctly.
+
+Toasts live in two regions that are in the DOM from the first render, so that anything inserted
+into them is announced: successes go into a polite region, failures into an assertive one. A
+toast dismisses itself after five seconds unless it is hovered or focused, and every toast has a
+dismiss button.
+
 ## Decision log
 
 ### Phase 1: project setup
@@ -467,6 +494,14 @@ unfiltered.
 | A skipped filter shows the widget unfiltered with a badge       | See the trade-off above: present and labelled beats absent, and one broken filter should not blank a whole dashboard.                                                  |
 | The search box debounces the value, not just the URL write      | Debouncing only the URL still puts every keystroke in the query key, which is a request per character, each one cancelling the last.                                   |
 | The filter bar loads, fails and recovers like a widget          | It reads from the same source the widgets read from. Pretending otherwise would leave a control confidently offering options it could not fetch.                       |
+
+### Decisions on UI primitives
+
+| Decision                                                  | Why                                                                                                                                                                              |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No component library, native elements first               | A `<select>`, a `<details>` and a `<fieldset>` already carry the keyboard and screen reader behaviour a library would re-implement, and they cost nothing to ship.               |
+| Modal and toasts hand written rather than Radix or sonner | The two things actually needed are a dialog and a live region. `<dialog>` supplies the hard half of the first, and the second is twenty lines, so three dependencies buy little. |
+| The chip group is a fieldset, not a labelled div          | A `<label for>` pointing at a div names nothing. A fieldset with a legend gives the group a real accessible name, which is what a screen reader reads before the chips.          |
 
 ## Open questions
 

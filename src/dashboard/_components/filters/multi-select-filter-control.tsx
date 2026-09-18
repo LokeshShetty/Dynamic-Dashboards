@@ -91,8 +91,14 @@ export function MultiSelectFilterControl({ filter, dataset, value, onChange }: P
   }
 
   return (
-    <FilterField label={filter.label} controlId={controlId} className="min-w-64" note={note()}>
-      <div id={controlId} className="flex flex-wrap gap-1">
+    <FilterField
+      label={filter.label}
+      controlId={controlId}
+      labelling="group"
+      className="min-w-64"
+      note={note()}
+    >
+      <div className="flex flex-wrap gap-1">
         {offered.map((option) => {
           const isSelected = selected.has(option)
           const isMissing = missing.includes(option)

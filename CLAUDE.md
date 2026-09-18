@@ -5,9 +5,11 @@ Custom dashboard. Vite + React 19 + TypeScript strict, client only, no backend.
 ## Stack
 
 - Vite, React 19, TS strict, npm.
-- Tailwind with cva + cn, shadcn recipes copied into src/components/ui/, lucide-react for icons, zod for validation, Zustand for client state, Vitest + React Testing Library for tests.
+- Tailwind with cva + cn, lucide-react for icons, zod for validation, Zustand for client state, Vitest + React Testing Library for tests.
 - TanStack Query for fetching, React Router for the single /d/:id route, nuqs for URL state, React Hook Form + zod for the editor form, Recharts for charts.
-- No second component library, no second state library, no HTTP client. If something feels missing, ask first.
+- No component library at all. Native elements first (select, input, details, dialog, table, fieldset), styled with Tailwind.
+- UI primitives are hand written into src/components/ui/ in the shadcn style (cva + cn), one file per primitive, only when a native element cannot do the job.
+- No second state library, no HTTP client, no Radix, no toast or modal package. If something feels missing, ask first.
 
 ## Folder structure
 

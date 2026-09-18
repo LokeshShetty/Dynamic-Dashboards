@@ -5,12 +5,34 @@ import { cn } from '@/lib/utils'
 type Props = {
   label: string
   controlId: string
+  /**
+   * A native control takes a real label. A set of toggle buttons is not a labelable element,
+   * so it takes a labelled group instead: a label pointing at a div names nothing at all.
+   */
+  labelling?: 'control' | 'group'
   children: ReactNode
   note?: ReactNode
   className?: string
 }
 
-export function FilterField({ label, controlId, children, note, className }: Props) {
+export function FilterField({
+  label,
+  controlId,
+  labelling = 'control',
+  children,
+  note,
+  className,
+}: Props) {
+  if (labelling === 'group') {
+    return (
+      <fieldset className={cn('flex min-w-44 flex-col gap-1 border-0 p-0', className)}>
+        <legend className="text-fg-muted mb-1 text-xs font-medium">{label}</legend>
+        {children}
+        {note}
+      </fieldset>
+    )
+  }
+
   return (
     <div className={cn('flex min-w-44 flex-col gap-1', className)}>
       <label htmlFor={controlId} className="text-fg-muted text-xs font-medium">
