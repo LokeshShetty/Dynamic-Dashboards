@@ -1,0 +1,74 @@
+/* Semantic design tokens. Components never reference a palette or a hex value. */
+:root {
+  --surface: oklch(0.99 0.002 255);
+  --surface-muted: oklch(0.965 0.004 255);
+  --surface-raised: oklch(1 0 0);
+  --fg: oklch(0.24 0.02 265);
+  --fg-muted: oklch(0.52 0.02 265);
+  --fg-subtle: oklch(0.66 0.015 265);
+  --border: oklch(0.9 0.008 265);
+  --border-strong: oklch(0.78 0.012 265);
+  --accent: oklch(0.55 0.17 262);
+  --accent-fg: oklch(0.99 0.01 262);
+  --danger: oklch(0.55 0.19 25);
+  --danger-surface: oklch(0.96 0.03 25);
+  --warning: oklch(0.6 0.14 70);
+  --warning-surface: oklch(0.96 0.05 80);
+  --success: oklch(0.55 0.13 150);
+  --success-surface: oklch(0.95 0.04 155);
+  --chart-1: oklch(0.6 0.16 262);
+  --chart-2: oklch(0.65 0.15 175);
+  --chart-3: oklch(0.68 0.16 60);
+  --chart-4: oklch(0.6 0.18 330);
+  --chart-5: oklch(0.62 0.14 140);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --surface: oklch(0.19 0.012 265);
+    --surface-muted: oklch(0.23 0.014 265);
+    --surface-raised: oklch(0.25 0.015 265);
+    --fg: oklch(0.96 0.005 265);
+    --fg-muted: oklch(0.74 0.015 265);
+    --fg-subtle: oklch(0.58 0.015 265);
+    --border: oklch(0.32 0.015 265);
+    --border-strong: oklch(0.45 0.02 265);
+    --accent: oklch(0.68 0.15 262);
+    --accent-fg: oklch(0.18 0.02 262);
+    --danger: oklch(0.7 0.17 25);
+    --danger-surface: oklch(0.3 0.08 25);
+    --warning: oklch(0.78 0.13 75);
+    --warning-surface: oklch(0.32 0.06 75);
+    --success: oklch(0.72 0.13 155);
+    --success-surface: oklch(0.28 0.06 155);
+    --chart-1: oklch(0.7 0.15 262);
+    --chart-2: oklch(0.74 0.14 175);
+    --chart-3: oklch(0.78 0.15 60);
+    --chart-4: oklch(0.7 0.16 330);
+    --chart-5: oklch(0.72 0.13 140);
+  }
+}
+
+@theme inline {
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-raised: var(--surface-raised);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-danger: var(--danger);
+  --color-danger-surface: var(--danger-surface);
+  --color-warning: var(--warning);
+  --color-warning-surface: var(--warning-surface);
+  --color-success: var(--success);
+  --color-success-surface: var(--success-surface);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+}

@@ -1,32 +1,38 @@
-# React + TypeScript + Vite
+# Configurable Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A dashboard layer that turns a user-authored, versioned JSON configuration into a live dashboard,
+built around one promise:
 
-Currently, two official plugins are available:
+> Every widget is either showing the truth or visibly showing that it cannot.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+The interesting part is not the happy path. It is what happens when the configuration is old,
+malformed or hostile, when fields are renamed or change type under the renderer, when the data
+layer is slow or failing, and when two tabs edit the same dashboard at once.
 
-## React Compiler
+See [DESIGN.md](DESIGN.md) for the configuration format, the guarantees and the trade-offs.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Getting started
 
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```sh
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Open the app and it redirects to `/d/demo`.
+
+## Scripts
+
+| Script                 | What it does                                          |
+| ---------------------- | ----------------------------------------------------- |
+| `npm run dev`          | Vite dev server                                       |
+| `npm run typecheck`    | `tsc -b`, TypeScript in strict mode                   |
+| `npm run lint`         | oxlint                                                |
+| `npm run format:check` | Prettier in check mode                                |
+| `npm run test`         | Vitest run, jsdom, React Testing Library              |
+| `npm run build`        | Production build                                      |
+| `npm run check`        | All of the above in that order, green before a commit |
+
+## Stack
+
+Vite, React 19, TypeScript strict, Tailwind v4 with cva and `cn`, TanStack Query, React Router,
+nuqs for URL state, React Hook Form with zod, Recharts, Zustand, Vitest with React Testing Library.

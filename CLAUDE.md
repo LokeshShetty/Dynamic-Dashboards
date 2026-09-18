@@ -1,11 +1,12 @@
 # CLAUDE.md
 
-Custom dashboard. Vite + React 18 + TypeScript strict, client only, no backend.
+Custom dashboard. Vite + React 19 + TypeScript strict, client only, no backend.
 
 ## Stack
 
-- Vite, React 18, TS strict, npm.
+- Vite, React 19, TS strict, npm.
 - Tailwind with cva + cn, shadcn recipes copied into src/components/ui/, lucide-react for icons, zod for validation, Zustand for client state, Vitest + React Testing Library for tests.
+- TanStack Query for fetching, React Router for the single /d/:id route, nuqs for URL state, React Hook Form + zod for the editor form, Recharts for charts.
 - No second component library, no second state library, no HTTP client. If something feels missing, ask first.
 
 ## Folder structure
@@ -91,7 +92,7 @@ Custom dashboard. Vite + React 18 + TypeScript strict, client only, no backend.
 
 ## Quality gates
 
-- Scripts: typecheck (tsc -b), lint (eslint with no-console, import/order, react-hooks, react/no-danger), format:check (prettier), test (vitest run), build (vite build).
+- Scripts: typecheck (tsc -b), lint (oxlint with no-console, react hooks rules, react/no-danger, no-explicit-any), format:check (prettier, which also enforces import order), test (vitest run), build (vite build).
 - check runs all of them in that order. npm run check is green before every commit.
 
 ## Git
