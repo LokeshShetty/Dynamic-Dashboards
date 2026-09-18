@@ -21,6 +21,9 @@ export const MAX_SERIES_PER_CHART = 8
 /** How many rows a table fetches, so sorting and paging can happen without a round trip. */
 export const TABLE_FETCH_LIMIT = 200
 
+/** How many distinct values a filter control will offer before it says it is showing a subset. */
+export const DISTINCT_VALUE_LIMIT = 200
+
 /** A request that has not answered in this long is treated as never answering. */
 export const REQUEST_TIMEOUT_MS = 8_000
 

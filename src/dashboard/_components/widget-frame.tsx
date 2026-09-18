@@ -1,10 +1,20 @@
 import type { ReactNode } from 'react'
 
-import { AlertTriangle, Check, FileWarning, History, Inbox, RefreshCw, Unlink } from 'lucide-react'
+import {
+  AlertTriangle,
+  Check,
+  FileWarning,
+  FilterX,
+  History,
+  Inbox,
+  RefreshCw,
+  Unlink,
+} from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
+import type { UnappliedFilter } from '../_lib/filter-notices'
 import { formatClockTime } from '../_lib/format'
 import type { WidgetState } from '../_types'
 import { WidgetBadge } from './widget-badge'
@@ -13,6 +23,9 @@ import { WidgetErrorBoundary } from './widget-error-boundary'
 import { WidgetStateNotice } from './widget-state-notice'
 import { WidgetStatePanel } from './widget-state-panel'
 
+/** A stable empty list, so the default does not make every frame re-render. */
+const NO_UNAPPLIED_FILTERS: UnappliedFilter[] = []
+
 type Props<TResult> = {
   title: string
   widgetId: string
@@ -20,6 +33,8 @@ type Props<TResult> = {
   skeleton: ReactNode
   configText: string
   onRefresh: () => void
+  /** Filters the data layer could not honour, so the tile can say it is showing unfiltered data. */
+  unappliedFilters?: UnappliedFilter[]
   children: (result: TResult) => ReactNode
   className?: string
 }
@@ -39,6 +54,7 @@ export function WidgetFrame<TResult>({
   skeleton,
   configText,
   onRefresh,
+  unappliedFilters = NO_UNAPPLIED_FILTERS,
   children,
   className,
 }: Props<TResult>) {
@@ -55,7 +71,16 @@ export function WidgetFrame<TResult>({
       <header className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-col gap-1">
           <h3 className="text-fg truncate text-sm font-semibold">{title}</h3>
-          {isTakenOver ? null : <HeaderBadge state={state} />}
+          <span className="flex flex-wrap items-center gap-1">
+            {isTakenOver ? null : <HeaderBadge state={state} />}
+            {unappliedFilters.length > 0 ? (
+              <WidgetBadge icon={FilterX} tone="warning">
+                {unappliedFilters.length === 1
+                  ? `Unfiltered: ${unappliedFilters[0]?.label ?? ''}`
+                  : `${unappliedFilters.length} filters not applied`}
+              </WidgetBadge>
+            ) : null}
+          </span>
         </div>
         <Button
           variant="ghost"
@@ -115,6 +140,13 @@ export function WidgetFrame<TResult>({
               label="No data"
               message="No rows match the filters in force, so there is nothing to show here."
               retry={{ label: 'Check again', onRetry: onRefresh }}
+            />
+          ) : null}
+
+          {unappliedFilters.length > 0 && !isTakenOver ? (
+            <WidgetStateNotice
+              tone="warning"
+              message={`${unappliedFilters.map((entry) => entry.reason).join('. ')}. This widget is showing unfiltered data.`}
             />
           ) : null}
 

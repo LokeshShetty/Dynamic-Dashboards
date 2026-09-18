@@ -46,6 +46,19 @@ export type ResolvedSort =
   | { kind: 'applied'; field: string; direction: DataSort['direction'] }
   | { kind: 'unresolved'; field: string }
 
+/**
+ * A filter the data layer could not honour, because the field it names is gone or is no longer
+ * the kind of field that filter can work on. The rows come back unfiltered and say so, rather
+ * than the query failing or, worse, quietly returning everything as if the filter had matched.
+ */
+export type SkippedFilter = {
+  field: string
+  reason: 'field-missing' | 'type-mismatch'
+  /** What the filter needed the field to be, in words the tile can print. */
+  expected: string
+  actualType: FieldType | null
+}
+
 export type SeriesDescriptor = {
   key: string
   field: ResolvedField
@@ -54,13 +67,20 @@ export type SeriesDescriptor = {
 }
 
 export type DataResult =
-  | { kind: 'value'; value: DataValue; matchedRows: number; field: ResolvedField }
+  | {
+      kind: 'value'
+      value: DataValue
+      matchedRows: number
+      field: ResolvedField
+      skippedFilters: SkippedFilter[]
+    }
   | {
       kind: 'rows'
       rows: DataRow[]
       matchedRows: number
       columns: ResolvedColumn[]
       sort: ResolvedSort | null
+      skippedFilters: SkippedFilter[]
     }
   | {
       kind: 'series'
@@ -70,6 +90,7 @@ export type DataResult =
       series: SeriesDescriptor[]
       /** The field the series were split by, when the chart groups. */
       groupBy: ResolvedField | null
+      skippedFilters: SkippedFilter[]
     }
 
 /**
@@ -86,6 +107,15 @@ export type DataError =
   | { kind: 'unknown-field'; dataset: string; field: string; available: string[] }
   | { kind: 'field-type'; dataset: string; field: string; actual: FieldType; expected: string }
   | { kind: 'too-many-series'; dataset: string; field: string; found: number; limit: number }
+
+/** The distinct values a field currently holds, for a control that offers them. */
+export type DistinctValues = {
+  dataset: string
+  field: string
+  values: string[]
+  /** True when the field holds more values than the control was willing to ask for. */
+  truncated: boolean
+}
 
 export type EffectiveDataset = {
   schema: DatasetSchema

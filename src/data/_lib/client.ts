@@ -4,13 +4,17 @@ import { useAppStore } from '@/lib/store'
 import type { ChaosSnapshot } from '@/types/chaos'
 import type { DatasetSchema } from '@/types/data'
 
-import { REQUEST_TIMEOUT_MS } from '../_constants'
-import type { DataError, DataQuery, DataResult } from '../_types'
+import { DISTINCT_VALUE_LIMIT, REQUEST_TIMEOUT_MS } from '../_constants'
+import type { DataError, DataQuery, DataResult, DistinctValues } from '../_types'
 import { corruptDataResult, corruptDatasetSchema } from './corrupt'
 import { DataRequestError } from './data-error'
 import { readEffectiveDataset } from './effective-dataset'
-import { executeQuery } from './execute-query'
-import { dataResultResponseSchema, datasetSchemaResponseSchema } from './response.schema'
+import { distinctValues, executeQuery } from './execute-query'
+import {
+  dataResultResponseSchema,
+  datasetSchemaResponseSchema,
+  distinctValuesResponseSchema,
+} from './response.schema'
 import { worldDatasetIds } from './world'
 
 /**
@@ -61,6 +65,32 @@ export async function runDataQuery(
     const payload = takeCorruption() ? corruptDataResult(result.data) : result.data
 
     return validate(dataResultResponseSchema.safeParse(payload))
+  })
+}
+
+/**
+ * The values a filter control can offer. It is a request like any other, so the filter bar is
+ * as slow, as failure prone and as affected by a renamed field as the widgets underneath it.
+ */
+export async function fetchDistinctValues(
+  dataset: string,
+  field: string,
+  options: RequestOptions = {},
+): Promise<DistinctValues> {
+  const chaos = readChaos()
+
+  return withTransport(options, chaos, 'data.distinct', () => {
+    const effective = readEffectiveDataset(dataset, chaos)
+    if (!effective.ok) throw new DataRequestError(effective.error)
+
+    const found = distinctValues(effective.data, field, DISTINCT_VALUE_LIMIT)
+    if (!found.ok) throw new DataRequestError(found.error)
+
+    const payload = takeCorruption()
+      ? { dataset, field, values: [null], truncated: 'maybe' }
+      : { dataset, field, ...found.data }
+
+    return validate(distinctValuesResponseSchema.safeParse(payload))
   })
 }
 

@@ -1,7 +1,5 @@
-import type { DataFilter } from '@/data/_types'
-
 import { slotToWidgetState } from '../_lib/widget-state'
-import type { WidgetSlot } from '../_types'
+import type { WidgetFilterContext, WidgetSlot } from '../_types'
 import { WidgetFrame } from './widget-frame'
 import { ChartWidgetTile } from './widgets/chart-widget'
 import { MetricWidgetTile } from './widgets/metric-widget'
@@ -14,7 +12,7 @@ type Props = {
   slot: WidgetSlot
   /** The entry exactly as it was written, so a broken tile can still show its own source. */
   rawEntry: unknown
-  filters: DataFilter[]
+  filters: WidgetFilterContext
 }
 
 /** Picks the body for a slot. Every branch ends in a frame, including the ones that failed. */

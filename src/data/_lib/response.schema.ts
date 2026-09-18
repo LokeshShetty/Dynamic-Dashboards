@@ -28,12 +28,27 @@ export const datasetSchemaResponseSchema = z.object({
   rowCount: z.number().int().min(0),
 })
 
+const skippedFilterSchema = z.object({
+  field: z.string().min(1),
+  reason: z.enum(['field-missing', 'type-mismatch']),
+  expected: z.string().min(1),
+  actualType: z.enum(FIELD_TYPES).nullable(),
+})
+
+export const distinctValuesResponseSchema = z.object({
+  dataset: z.string().min(1),
+  field: z.string().min(1),
+  values: z.array(z.string()),
+  truncated: z.boolean(),
+})
+
 export const dataResultResponseSchema = z.discriminatedUnion('kind', [
   z.object({
     kind: z.literal('value'),
     value: dataValueSchema,
     matchedRows: z.number().int().min(0),
     field: resolvedFieldSchema,
+    skippedFilters: z.array(skippedFilterSchema),
   }),
   z.object({
     kind: z.literal('rows'),
@@ -59,6 +74,7 @@ export const dataResultResponseSchema = z.discriminatedUnion('kind', [
         z.object({ kind: z.literal('unresolved'), field: z.string().min(1) }),
       ])
       .nullable(),
+    skippedFilters: z.array(skippedFilterSchema),
   }),
   z.object({
     kind: z.literal('series'),
@@ -78,5 +94,6 @@ export const dataResultResponseSchema = z.discriminatedUnion('kind', [
       }),
     ),
     groupBy: resolvedFieldSchema.nullable(),
+    skippedFilters: z.array(skippedFilterSchema),
   }),
 ])

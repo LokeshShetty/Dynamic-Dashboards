@@ -24,7 +24,7 @@ Three failure modes the promise rules out:
 | 2. Config schema, migrations, tests       | Done        |
 | 3. Data layer, chaos controls, fetch hook | Done        |
 | 4. Rendering and the four widget types    | Done        |
-| 5. Dashboard filters                      | Not started |
+| 5. Dashboard filters                      | Done        |
 | 6. Widget editor                          | Not started |
 | 7. Persistence, revisions, conflicts      | Not started |
 | 8. Hostile configuration corpus           | Not started |
@@ -327,6 +327,79 @@ Every tile has its own refresh, and the dashboard header has one that invalidate
 it. Both go through the same query keys as everything else, so a manual refresh cannot produce a
 state the automatic path could not.
 
+## Dashboard filters
+
+Four kinds, all defined in the configuration and all applying across every widget that can honour
+them: `select`, `multi-select`, `date-range` and `search`.
+
+### Where a filter value lives
+
+The configuration owns the **defaults**. The URL owns the **current values**, one readable
+parameter per control rather than one encoded blob:
+
+```
+/d/demo?f_status=paid&f_payer=Cascade+Mutual,Northwind+Care&f_submitted_from=2026-08-01&f_submitted_to=2026-09-15&f_claim=CLM-1002
+```
+
+Nothing about a filter lives in component state, so a link reproduces exactly what the sender was
+looking at. The bar shows how many controls differ from the configured defaults and has a reset
+that clears every parameter at once.
+
+### The URL is input
+
+Every parameter goes through the same zod schemas the configuration uses, wired into nuqs
+parsers. A parameter that does not validate is ignored, the configured default is used in its
+place, and the bar says which parameter it dropped and why:
+
+> Ignored `f_submitted_from`=`not-a-date`: invalid ISO date. Using the configured default instead.
+
+A date range needs both ends. A half range falls back to the configured other end, and says so
+when there is none. A range that ends before it starts is refused rather than swapped, because
+swapping would silently answer a question nobody asked. None of these paths can crash the page.
+
+### Options come from the data, not the configuration
+
+`select` and `multi-select` offer the values the field actually holds right now, fetched through
+the same client as everything else, which means they are slow, they can fail, and a renamed field
+takes the options away. So the bar is treated as a data surface in its own right:
+
+- while the values load, the control shows a skeleton of its own shape;
+- if the load fails, the control says why and turns into a text input, so a reader who already
+  knows the value they want is never blocked by a failing list;
+- when the field holds more values than the control will list, it says it is showing a subset.
+
+A value that is selected but no longer present in the data **stays selected** and is marked
+`not present in current data`. Dropping it would quietly widen the query: the widgets would fill
+with rows the reader had excluded, under a filter bar that still claimed to exclude them. Instead
+the filter still applies, the widgets honestly go empty, and the control explains why.
+
+### Filters and the query
+
+Filters are applied inside the data query, so aggregates run over the filtered rows rather than
+being trimmed afterwards. The filter values are part of the query key, which means changing a
+filter starts a new query and the in-flight requests under the old values are cancelled: the
+observer moves to the new key, TanStack Query cancels the abandoned fetch because our client
+consumed its `AbortSignal`, and the answer to the old question can never arrive on screen.
+
+### When a filter cannot apply to a widget
+
+A filter names a field. That field can disappear, or stop being the kind of field the filter
+works on: a `select` needs a category, a `date-range` needs a date, a `search` needs text. When
+that happens the data layer **skips that filter, returns unfiltered rows, and reports the skip**.
+The widget then carries a badge in its header and a line above the data:
+
+> filter "Payer" is not applicable: "payer" is number now, and this filter needs a text or boolean
+> field. This widget is showing unfiltered data.
+
+**The trade-off we did not take.** The stricter option is to refuse to render the widget at all,
+on the grounds that unfiltered data under a filter bar is misleading. We chose visible and
+unfiltered over absent, because the reader loses less: a widget that is present, labelled and
+readable lets them see the data and act on the broken filter, while an absent widget tells them
+only that something is wrong. The strict option would also spread one bad filter across every
+widget on the dashboard, turning a filter problem into a blank page. The badge is what makes the
+weaker option honest: it is on the tile, in the header, in words, and it says the data is
+unfiltered.
+
 ## Decision log
 
 ### Phase 1: project setup
@@ -381,6 +454,19 @@ state the automatic path could not.
 | Layout collisions are per widget invalid, not a reflow | A grid that reflows to fit a broken layout shows a dashboard nobody arranged, and the reader cannot tell which one they are looking at.                                            |
 | Recharts is lazy loaded behind a same size skeleton    | It is 380 KB of the bundle for a widget type a dashboard may not even use, and a skeleton that matches the chart keeps the layout still while it arrives.                          |
 | Skeletons instead of spinners                          | A spinner says only that something is happening. A skeleton in the shape of the widget says what is coming and keeps the page from jumping when it arrives.                        |
+
+### Phase 5: filters
+
+| Decision                                                        | Why                                                                                                                                                                    |
+| --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Values in the URL, one readable parameter per control           | A dashboard is something people send each other. One parameter per control survives being read, edited and pasted; a JSON blob survives none of those.                 |
+| Defaults in the configuration, current values in the URL        | The author decides where a reader starts, the reader decides where they go, and neither overwrites the other.                                                          |
+| Options come from the live data, not from the configuration     | A list written months ago describes the world as it was. Offering a value that no longer exists, or hiding one that does, is a quiet way to mislead.                   |
+| A selected value that is gone from the data still applies       | Dropping it would widen the query behind the reader's back. Applying it and going honestly empty, with the control saying the value is not present, keeps the promise. |
+| An invalid URL parameter falls back to the default and is named | Silently repairing a parameter answers a different question from the one the URL asked. Naming it lets the reader fix their own link.                                  |
+| A skipped filter shows the widget unfiltered with a badge       | See the trade-off above: present and labelled beats absent, and one broken filter should not blank a whole dashboard.                                                  |
+| The search box debounces the value, not just the URL write      | Debouncing only the URL still puts every keystroke in the query key, which is a request per character, each one cancelling the last.                                   |
+| The filter bar loads, fails and recovers like a widget          | It reads from the same source the widgets read from. Pretending otherwise would leave a control confidently offering options it could not fetch.                       |
 
 ## Open questions
 

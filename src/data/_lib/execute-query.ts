@@ -16,6 +16,7 @@ import type {
   SeriesBinding,
   SeriesDescriptor,
   SeriesPoint,
+  SkippedFilter,
 } from '../_types'
 
 /**
@@ -27,9 +28,8 @@ export function executeQuery(
   dataset: EffectiveDataset,
 ): Result<DataResult, DataError> {
   const filtered = applyFilters(query.filters, dataset)
-  if (!filtered.ok) return filtered
-
-  const rows = filtered.data
+  const rows = filtered.rows
+  const skippedFilters = filtered.skipped
   const { select } = query
 
   switch (select.kind) {
@@ -45,6 +45,7 @@ export function executeQuery(
         value: aggregate(rows, field.data.name, select.aggregate),
         matchedRows: rows.length,
         field: describe(field.data),
+        skippedFilters,
       })
     }
 
@@ -69,6 +70,7 @@ export function executeQuery(
         matchedRows: rows.length,
         columns,
         sort: sorted.sort,
+        skippedFilters,
       })
     }
 
@@ -98,6 +100,7 @@ export function executeQuery(
           x: describe(xField.data),
           series,
           groupBy: null,
+          skippedFilters,
         })
       }
 
@@ -108,6 +111,7 @@ export function executeQuery(
         select.x.bucket,
         select.series,
         select.groupBy,
+        skippedFilters,
       )
     }
   }
@@ -164,20 +168,79 @@ function checkAggregate(
   return ok(true)
 }
 
+/** What a predicate needs from the field it names. */
+function expectationOf(filter: DataFilter): string {
+  if (filter.kind === 'date-range') return 'a date field'
+  if (filter.kind === 'contains') return 'a text field'
+  return 'a text or boolean field'
+}
+
+function canApply(filter: DataFilter, field: DatasetField): boolean {
+  if (filter.kind === 'date-range') return field.type === 'date'
+  if (filter.kind === 'contains') return field.type === 'text'
+  return field.type === 'text' || field.type === 'boolean'
+}
+
+/**
+ * A filter whose field has been renamed away, or whose field is no longer the kind of thing it
+ * can work on, is skipped and reported. The alternative, failing the whole query, would take a
+ * working widget off the dashboard over a filter the reader can see and change.
+ */
 function applyFilters(
   filters: ReadonlyArray<DataFilter>,
   dataset: EffectiveDataset,
-): Result<DataRow[], DataError> {
+): { rows: DataRow[]; skipped: SkippedFilter[] } {
   let rows = dataset.rows
+  const skipped: SkippedFilter[] = []
 
   for (const filter of filters) {
     const field = findField(dataset, filter.field)
-    if (!field.ok) return field
+
+    if (!field.ok) {
+      skipped.push({
+        field: filter.field,
+        reason: 'field-missing',
+        expected: expectationOf(filter),
+        actualType: null,
+      })
+      continue
+    }
+
+    if (!canApply(filter, field.data)) {
+      skipped.push({
+        field: filter.field,
+        reason: 'type-mismatch',
+        expected: expectationOf(filter),
+        actualType: field.data.type,
+      })
+      continue
+    }
 
     rows = rows.filter((row) => matches(row[filter.field] ?? null, filter))
   }
 
-  return ok(rows)
+  return { rows, skipped }
+}
+
+/** The distinct values a field holds right now, for the controls that offer them. */
+export function distinctValues(
+  dataset: EffectiveDataset,
+  field: string,
+  limit: number,
+): Result<{ values: string[]; truncated: boolean }, DataError> {
+  const found = findField(dataset, field)
+  if (!found.ok) return found
+
+  const values = [
+    ...new Set(
+      dataset.rows
+        .map((row) => row[found.data.name] ?? null)
+        .filter((value) => value !== null)
+        .map((value) => String(value)),
+    ),
+  ].sort()
+
+  return ok({ values: values.slice(0, limit), truncated: values.length > limit })
 }
 
 function matches(value: DataValue, filter: DataFilter): boolean {
@@ -336,6 +399,7 @@ function groupedSeries(
   bucket: TimeBucket | null,
   bindings: ReadonlyArray<SeriesBinding>,
   groupBy: string,
+  skippedFilters: SkippedFilter[],
 ): Result<DataResult, DataError> {
   const groupField = findField(dataset, groupBy)
   if (!groupField.ok) return groupField
@@ -396,5 +460,6 @@ function groupedSeries(
     x: describe(xField),
     series,
     groupBy: describe(groupField.data),
+    skippedFilters,
   })
 }

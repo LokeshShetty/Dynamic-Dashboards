@@ -27,6 +27,7 @@ export function corruptDataResult(result: DataResult): unknown {
         x: result.x,
         series: result.series,
         groupBy: result.groupBy,
+        skippedFilters: result.skippedFilters,
       }
   }
 }

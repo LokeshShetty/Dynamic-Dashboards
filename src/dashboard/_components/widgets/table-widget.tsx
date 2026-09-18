@@ -1,10 +1,12 @@
-import type { DataFilter, DataResult } from '@/data/_types'
+import type { DataResult } from '@/data/_types'
 
 import { useWidgetData } from '../../_hooks/use-widget-data'
 import type { TableWidget } from '../../_lib/config.schema'
+import { unappliedFiltersOf } from '../../_lib/filter-notices'
 import { toColumnViews } from '../../_lib/table-columns'
 import { toTableQuery } from '../../_lib/to-data-query'
 import { withPresentationCheck } from '../../_lib/widget-state'
+import type { WidgetFilterContext } from '../../_types'
 import { TableSkeleton } from '../skeletons/widget-skeletons'
 import { WidgetFrame } from '../widget-frame'
 import { DataTable } from './data-table'
@@ -13,14 +15,14 @@ type Props = {
   dashboardId: string
   dataset: string
   widget: TableWidget
-  filters: DataFilter[]
+  filters: WidgetFilterContext
 }
 
 export function TableWidgetTile({ dashboardId, dataset, widget, filters }: Props) {
   const { state, refresh } = useWidgetData({
     dashboardId,
     widgetId: widget.id,
-    query: toTableQuery(widget, dataset, filters),
+    query: toTableQuery(widget, dataset, filters.applied),
   })
 
   // Only a table with nothing left to show is unresolvable. One dead column is the column's
@@ -35,6 +37,7 @@ export function TableWidgetTile({ dashboardId, dataset, widget, filters }: Props
       skeleton={<TableSkeleton rows={Math.min(widget.pageSize, 6)} />}
       configText={JSON.stringify(widget, null, 2)}
       onRefresh={refresh}
+      unappliedFilters={unappliedFiltersOf(checked, filters.labels)}
     >
       {(result) =>
         result.kind === 'rows' ? (

@@ -1,12 +1,14 @@
 import { lazy, Suspense } from 'react'
 
-import type { DataFilter, DataResult } from '@/data/_types'
+import type { DataResult } from '@/data/_types'
 
 import { useWidgetData } from '../../_hooks/use-widget-data'
 import type { ChartWidget } from '../../_lib/config.schema'
+import { unappliedFiltersOf } from '../../_lib/filter-notices'
 import { resolveFormatter } from '../../_lib/format'
 import { toChartQuery } from '../../_lib/to-data-query'
 import { withPresentationCheck } from '../../_lib/widget-state'
+import type { WidgetFilterContext } from '../../_types'
 import { ChartSkeleton } from '../skeletons/widget-skeletons'
 import { WidgetFrame } from '../widget-frame'
 
@@ -19,14 +21,14 @@ type Props = {
   dashboardId: string
   dataset: string
   widget: ChartWidget
-  filters: DataFilter[]
+  filters: WidgetFilterContext
 }
 
 export function ChartWidgetTile({ dashboardId, dataset, widget, filters }: Props) {
   const { state, refresh } = useWidgetData({
     dashboardId,
     widgetId: widget.id,
-    query: toChartQuery(widget, dataset, filters),
+    query: toChartQuery(widget, dataset, filters.applied),
   })
 
   const checked = withPresentationCheck(state, (result) => checkChart(result, widget))
@@ -39,6 +41,7 @@ export function ChartWidgetTile({ dashboardId, dataset, widget, filters }: Props
       skeleton={<ChartSkeleton />}
       configText={JSON.stringify(widget, null, 2)}
       onRefresh={refresh}
+      unappliedFilters={unappliedFiltersOf(checked, filters.labels)}
     >
       {(result) => {
         if (result.kind !== 'series') return null

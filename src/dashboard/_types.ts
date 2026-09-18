@@ -1,4 +1,4 @@
-import type { DataResult } from '@/data/_types'
+import type { DataFilter, DataResult } from '@/data/_types'
 
 import type { DashboardShell, Widget } from './_lib/config.schema'
 
@@ -75,3 +75,11 @@ export type WidgetState<TResult = DataResult> =
       maxAttempts: number
       isRefreshing: boolean
     }
+
+/** What a widget needs to know about the filter bar above it. */
+export type WidgetFilterContext = {
+  /** The predicates that go into the query. */
+  applied: DataFilter[]
+  /** Field name to the label the reader sees, so a skipped filter can be named on the tile. */
+  labels: Record<string, string>
+}
