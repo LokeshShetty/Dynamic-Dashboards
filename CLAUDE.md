@@ -35,6 +35,7 @@ Custom dashboard. Vite + React 19 + TypeScript strict, client only, no backend.
 - zod schemas: \_lib/<name>.schema.ts. The schema is the single source of truth for parsing and for forms.
 - Zustand slices: src/lib/store/slices/<name>.slice.ts.
 - Design tokens: src/styles/tokens.css.
+- URL state goes through nuqs with the nuqs/adapters/react-router/v8 adapter. The generic nuqs/adapters/react-router import is deprecated, never use it.
 
 ## Naming and exports
 

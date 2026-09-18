@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 2,
+  "id": "demo",
+  "title": "Operations overview",
+  "version": 4,
+  "updatedAt": "2026-09-01T09:00:00.000Z",
+  "dataset": "orders",
+  "layout": { "columns": 12 },
+  "filters": [
+    {
+      "id": "region",
+      "kind": "select",
+      "label": "Region",
+      "field": "region",
+      "options": [
+        { "value": "emea", "label": "EMEA" },
+        { "value": "amer", "label": "Americas" },
+        { "value": "apac", "label": "APAC" }
+      ]
+    },
+    {
+      "id": "channel",
+      "kind": "multi-select",
+      "label": "Channel",
+      "field": "channel",
+      "options": [
+        { "value": "direct", "label": "Direct" },
+        { "value": "partner", "label": "Partner" },
+        { "value": "marketplace", "label": "Marketplace" }
+      ]
+    },
+    {
+      "id": "placed",
+      "kind": "date-range",
+      "label": "Placed",
+      "field": "createdAt",
+      "defaultValue": { "from": "2026-08-01", "to": "2026-08-31" }
+    },
+    {
+      "id": "customer",
+      "kind": "search",
+      "label": "Customer",
+      "field": "customer",
+      "placeholder": "Search customers"
+    }
+  ],
+  "widgets": [
+    {
+      "id": "revenue",
+      "kind": "metric",
+      "title": "Revenue",
+      "layout": { "colSpan": 3, "rowSpan": 1 },
+      "value": { "field": "revenue", "aggregate": "sum" },
+      "format": { "style": "currency", "currency": "USD", "decimals": 0 }
+    },
+    {
+      "id": "orders",
+      "kind": "metric",
+      "title": "Orders",
+      "layout": { "colSpan": 3, "rowSpan": 1 },
+      "value": { "field": "id", "aggregate": "count" }
+    },
+    {
+      "id": "units",
+      "kind": "metric",
+      "title": "Units per order",
+      "layout": { "colSpan": 3, "rowSpan": 1 },
+      "value": { "field": "units", "aggregate": "avg" },
+      "format": { "style": "plain", "decimals": 1 }
+    },
+    {
+      "id": "refund-rate",
+      "kind": "metric",
+      "title": "Largest order",
+      "layout": { "colSpan": 3, "rowSpan": 1 },
+      "value": { "field": "revenue", "aggregate": "max" },
+      "format": { "style": "currency", "currency": "USD", "decimals": 0 }
+    },
+    {
+      "id": "revenue-trend",
+      "kind": "chart",
+      "title": "Revenue by day",
+      "layout": { "colSpan": 8, "rowSpan": 2 },
+      "chartType": "line",
+      "x": { "field": "createdAt", "bucket": "day" },
+      "series": [{ "field": "revenue", "aggregate": "sum", "label": "Revenue" }]
+    },
+    {
+      "id": "region-split",
+      "kind": "chart",
+      "title": "Units by region",
+      "layout": { "colSpan": 4, "rowSpan": 2 },
+      "chartType": "bar",
+      "x": { "field": "region" },
+      "series": [{ "field": "units", "aggregate": "sum", "label": "Units" }]
+    },
+    {
+      "id": "recent-orders",
+      "kind": "table",
+      "title": "Recent orders",
+      "layout": { "colSpan": 12, "rowSpan": 2 },
+      "columns": [
+        { "field": "createdAt", "label": "Placed" },
+        { "field": "customer", "label": "Customer" },
+        { "field": "region", "label": "Region" },
+        { "field": "status", "label": "Status" },
+        {
+          "field": "revenue",
+          "label": "Revenue",
+          "align": "right",
+          "format": { "style": "currency", "currency": "USD", "decimals": 2 }
+        }
+      ],
+      "pageSize": 10,
+      "sort": { "field": "createdAt", "direction": "desc" }
+    },
+    {
+      "id": "reading-note",
+      "kind": "text",
+      "title": "How to read this",
+      "layout": { "colSpan": 12, "rowSpan": 1 },
+      "body": "Figures cover the selected date range only. A widget that cannot reach its data says so on the tile instead of showing a stale number.",
+      "tone": "note"
+    }
+  ]
+}

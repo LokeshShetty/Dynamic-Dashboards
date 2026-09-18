@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "legacy",
+  "name": "Operations overview (v1)",
+  "source": "orders",
+  "widgets": [
+    {
+      "id": "revenue",
+      "type": "metric",
+      "title": "Revenue",
+      "field": "revenue",
+      "agg": "sum",
+      "format": "currency"
+    },
+    { "id": "orders", "type": "metric", "title": "Orders", "field": "id", "agg": "count" },
+    {
+      "id": "trend",
+      "type": "chart",
+      "title": "Revenue by day",
+      "chart": "line",
+      "x": "createdAt",
+      "series": ["revenue"],
+      "agg": "sum"
+    },
+    {
+      "id": "recent",
+      "type": "table",
+      "title": "Recent orders",
+      "columns": ["createdAt", "customer", "region", "revenue"],
+      "rows": 5
+    },
+    {
+      "id": "note",
+      "type": "text",
+      "title": "About",
+      "text": "Saved by the previous dashboard build. It still opens."
+    }
+  ]
+}
