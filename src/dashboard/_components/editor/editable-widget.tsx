@@ -29,13 +29,11 @@ const DIRECTIONS: Record<string, { x: number; y: number } | undefined> = {
 
 /**
  * Edit chrome around a tile. The toolbar sits in its own row above the widget rather than over
- * it, so the title the reader is arranging stays readable the whole time, and the arrow cluster
- * appears only on the tile being worked on: twelve buttons on every tile is not an editor, it is
- * a wall.
+ * it, so the title stays readable while the tile is being arranged.
  *
- * The toolbar and the keyboard do the same things: arrows move, shift and arrows resize, while
- * focus is anywhere in the tile. Keys are ignored inside form controls so a table's own controls
- * keep working.
+ * Moving and resizing are gestures on the grid itself: drag the handle, drag the corner. The
+ * arrow keys do the same things while focus is in the tile, because a dashboard that can only be
+ * arranged with a pointer cannot be arranged by everyone.
  */
 export function EditableWidget({
   title,
@@ -88,8 +86,10 @@ export function EditableWidget({
         <WidgetToolbar
           title={title}
           position={describedPosition}
-          isSelected={isSelected}
-          {...actions}
+          onRename={actions.onRename}
+          onEdit={actions.onEdit}
+          onDuplicate={actions.onDuplicate}
+          onRemove={actions.onRemove}
         />
       </div>
 

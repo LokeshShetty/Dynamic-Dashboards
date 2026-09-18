@@ -1,8 +1,11 @@
 import type { ReactNode } from 'react'
 
+import type { Layout } from 'react-grid-layout'
+
 import type { DashboardShell } from '../_lib/config.schema'
+import { gridKeyFor, toGridPlacements } from '../_lib/grid-placement'
 import type { WidgetFilterContext, WidgetSlot } from '../_types'
-import { WidgetGrid, WidgetGridItem } from './widget-grid'
+import { WidgetGrid } from './widget-grid'
 import { WidgetRenderer } from './widget-renderer'
 
 type Props = {
@@ -11,11 +14,25 @@ type Props = {
   filters: WidgetFilterContext
   /** Edit mode wraps each tile in its own chrome; reading mode wraps nothing. */
   wrapTile?: (slot: WidgetSlot, tile: ReactNode) => ReactNode
+  isEditable?: boolean
+  onLayoutChange?: (layout: Layout) => void
 }
 
-export function DashboardGrid({ shell, slots, filters, wrapTile }: Props) {
+export function DashboardGrid({
+  shell,
+  slots,
+  filters,
+  wrapTile,
+  isEditable = false,
+  onLayoutChange,
+}: Props) {
   return (
-    <WidgetGrid columns={shell.layout.columns}>
+    <WidgetGrid
+      columns={shell.layout.columns}
+      placements={toGridPlacements(slots)}
+      isEditable={isEditable}
+      onLayoutChange={onLayoutChange}
+    >
       {slots.map((slot) => {
         const tile = (
           <WidgetRenderer
@@ -28,12 +45,9 @@ export function DashboardGrid({ shell, slots, filters, wrapTile }: Props) {
         )
 
         return (
-          <WidgetGridItem
-            key={`${slot.index}-${slot.kind}`}
-            layout={slot.kind === 'valid' ? slot.widget.layout : null}
-          >
+          <div key={gridKeyFor(slot.index)} className="flex min-h-0">
             {wrapTile ? wrapTile(slot, tile) : tile}
-          </WidgetGridItem>
+          </div>
         )
       })}
     </WidgetGrid>

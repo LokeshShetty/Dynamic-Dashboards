@@ -7,6 +7,7 @@ import { isDraftDirty } from '@/lib/store/slices/draft.slice'
 import type { WidgetKind } from '../_constants'
 import type { DashboardShell } from '../_lib/config.schema'
 import {
+  checkPlacement,
   clampResize,
   findFreeSlot,
   nextPlacement,
@@ -31,6 +32,8 @@ export type EditorApi = {
   removeWidget: (index: number) => void
   moveWidget: (index: number, dx: number, dy: number) => void
   resizeWidget: (index: number, dw: number, dh: number) => void
+  /** Applies a whole arrangement, as a drag or a resize leaves it. */
+  applyLayouts: (layouts: ReadonlyArray<{ index: number; rect: Rect }>) => void
 }
 
 /**
@@ -188,6 +191,30 @@ export function useEditor(): EditorApi {
         replace(index, (current) => ({ ...current, layout: outcome.rect }))
       },
       [columns, entries, reportRefusal, replace, setDraftWidgets],
+    ),
+
+    applyLayouts: useCallback(
+      (layouts) => {
+        const byIndex = new Map(layouts.map((entry) => [entry.index, entry.rect]))
+
+        const next = entries.map((entry, at) => {
+          const rect = byIndex.get(at)
+          if (!rect || !isRecord(entry)) return entry
+          return { ...entry, layout: rect }
+        })
+
+        // The grid moved the tiles; whether the arrangement is allowed is still decided here.
+        const placements = placementsOf(next)
+        const invalid = placements.find(
+          (placement) => checkPlacement(placements, placement.id, placement.rect, columns) !== null,
+        )
+
+        if (invalid) return
+        if (JSON.stringify(next) === JSON.stringify(entries)) return
+
+        setDraftWidgets(next)
+      },
+      [columns, entries, setDraftWidgets],
     ),
 
     resizeWidget: useCallback(

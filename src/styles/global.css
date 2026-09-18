@@ -14,3 +14,22 @@
     @apply outline-accent outline-2 outline-offset-2;
   }
 }
+
+/*
+ * The grid library ships its own look. These override only what it draws: the drop placeholder
+ * and the resize grip, so both speak the same visual language as everything else.
+ */
+@layer components {
+  .react-grid-item.react-grid-placeholder {
+    @apply bg-accent/25 rounded-lg opacity-100;
+  }
+
+  .react-grid-item > .react-resizable-handle {
+    @apply after:border-fg-subtle after:border-r-2 after:border-b-2;
+  }
+
+  .react-grid-item.react-draggable-dragging,
+  .react-grid-item.resizing {
+    @apply z-30;
+  }
+}

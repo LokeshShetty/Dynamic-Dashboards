@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react'
 
+import type { Layout } from 'react-grid-layout'
+
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { isRecord } from '@/lib/guards'
 import { useAppStore } from '@/lib/store'
@@ -9,6 +11,7 @@ import { useSaveDashboard } from '@/storage/_hooks/use-save-dashboard'
 import type { DashboardRecord } from '@/storage/_types'
 
 import { useEditor } from '../../_hooks/use-editor'
+import { indexFromGridKey } from '../../_lib/grid-placement'
 import { loadDashboardConfig } from '../../_lib/load-config'
 import type { WidgetFilterContext, WidgetSlot } from '../../_types'
 import { DashboardErrorScreen } from '../dashboard-error-screen'
@@ -119,6 +122,16 @@ export function EditorGrid({ dashboardId, filters, onLeave, onReloadSaved }: Pro
         shell={preview.shell}
         slots={preview.slots}
         filters={filters}
+        isEditable
+        onLayoutChange={(layout: Layout) => {
+          editor.applyLayouts(
+            layout.flatMap((item) => {
+              const index = indexFromGridKey(item.i)
+              if (index === null) return []
+              return [{ index, rect: { x: item.x, y: item.y, w: item.w, h: item.h } }]
+            }),
+          )
+        }}
         wrapTile={(slot: WidgetSlot, tile) => (
           <EditableWidget
             title={titleAt(slot.index)}

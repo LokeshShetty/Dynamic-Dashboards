@@ -581,6 +581,27 @@ Four behaviours the corpus forced, which now hold:
 - The **markdown subset has no raw HTML, no links and no images**, so a `javascript:` URL in a text
   widget has nowhere to go: it renders as the characters it is.
 
+## Arranging the grid
+
+Moving and resizing are pointer gestures on the grid itself, with a placeholder showing where a
+tile will land, and the arrow keys do the same two jobs from the keyboard: arrows move, shift and
+arrows resize, while focus is anywhere in the tile. The toolbar above each tile is left with the
+four things that have no gesture: rename, edit, duplicate, remove.
+
+`react-grid-layout` does the dragging and resizing. It is the one dependency in the project that
+was taken on for a feature rather than for tooling, and the reason is narrow: it is the only part
+of this system where the browser's own primitives do not reach. A pointer drag that snaps to
+cells is a weekend of edge cases (capture, touch, scroll, boundaries), and a resize grip with per
+widget minimum sizes is another. dnd-kit was the obvious alternative and was rejected on the
+facts: it does no resizing at all and no grid snapping, so it would have removed neither piece.
+
+**What the library is not allowed to decide.** It moves tiles; it does not decide what a valid
+layout is. Compaction is switched off, so nothing is tidied behind the reader's back, and every
+arrangement it produces is checked against the loader's own placement rules before it reaches the
+draft. An arrangement that would not load is not applied, and the grid snaps back to the last one
+that would. Each widget kind carries a minimum size, so a table cannot be dragged down to a sliver
+of itself.
+
 ## UI primitives
 
 There is no component library in this project. Every control is a native element styled with
