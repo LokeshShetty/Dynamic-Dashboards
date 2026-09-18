@@ -43,6 +43,7 @@ export function EditorGrid({ dashboardId, filters, onLeave, onReloadSaved }: Pro
   const discardDraft = useAppStore((state) => state.discardDraft)
   const [dialog, setDialog] = useState<EditorDialog | null>(null)
   const [conflict, setConflict] = useState<DashboardRecord | null>(null)
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null)
 
   const { state: recordState } = useDashboardRecord(dashboardId)
   const save = useSaveDashboard(dashboardId)
@@ -122,6 +123,8 @@ export function EditorGrid({ dashboardId, filters, onLeave, onReloadSaved }: Pro
           <EditableWidget
             title={titleAt(slot.index)}
             position={slot.kind === 'valid' ? slot.widget.layout : null}
+            isSelected={selectedIndex === slot.index}
+            onSelect={() => setSelectedIndex(slot.index)}
             actions={{
               onRename: () => setDialog({ kind: 'rename', index: slot.index }),
               onEdit: () => setDialog({ kind: 'edit', index: slot.index }),

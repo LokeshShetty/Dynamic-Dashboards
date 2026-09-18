@@ -58,7 +58,7 @@ export function EditorBar({
           }
         >
           <Save aria-hidden="true" className="size-3" />
-          {isSaving ? 'Saving…' : 'Save'}
+          {isSaving ? 'Saving…' : isDirty ? 'Save' : 'Saved'}
         </Button>
 
         <Button size="sm" onClick={onDiscard} disabled={!isDirty}>

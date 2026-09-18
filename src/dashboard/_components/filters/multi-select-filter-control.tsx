@@ -1,5 +1,7 @@
 import { useId, useMemo } from 'react'
 
+import { Check } from 'lucide-react'
+
 import { cn } from '@/lib/utils'
 
 import { useDistinctValues } from '../../_hooks/use-distinct-values'
@@ -110,13 +112,14 @@ export function MultiSelectFilterControl({ filter, dataset, value, onChange }: P
               aria-pressed={isSelected}
               onClick={() => toggle(option)}
               className={cn(
-                'rounded-full border px-2 py-1 text-xs',
+                'inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs',
                 isSelected
-                  ? 'border-accent bg-accent text-accent-fg'
+                  ? 'border-accent bg-accent text-accent-fg font-medium'
                   : 'border-border bg-surface-raised text-fg-muted hover:bg-surface-muted',
                 isMissing ? 'border-warning' : '',
               )}
             >
+              {isSelected ? <Check aria-hidden="true" className="size-3" /> : null}
               {labels.get(option) ?? option}
               {isMissing ? ' *' : ''}
             </button>

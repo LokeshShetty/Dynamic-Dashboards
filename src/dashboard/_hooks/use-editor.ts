@@ -6,7 +6,15 @@ import { isDraftDirty } from '@/lib/store/slices/draft.slice'
 
 import type { WidgetKind } from '../_constants'
 import type { DashboardShell } from '../_lib/config.schema'
-import { checkPlacement, findFreeSlot, placementsOf, type Rect } from '../_lib/layout'
+import {
+  clampResize,
+  findFreeSlot,
+  nextPlacement,
+  placementsOf,
+  swapCandidate,
+  type PlacementRefusal,
+  type Rect,
+} from '../_lib/layout'
 import { defaultSizeFor, newWidgetEntry } from '../_lib/widget-defaults'
 
 /**
@@ -55,20 +63,18 @@ export function useEditor(): EditorApi {
     [entries],
   )
 
-  const place = useCallback(
-    (id: string, rect: Rect, action: string) => {
-      const refusal = checkPlacement(placementsOf(entries), id, rect, columns)
-      if (!refusal) return true
-
-      refuse(
-        action,
-        refusal.kind === 'overlap'
-          ? `that would sit on top of “${titleOf(refusal.withId)}”`
-          : refusal.message,
-      )
-      return false
+  const reportRefusal = useCallback(
+    (action: string, refusal: PlacementRefusal) => {
+      // Running into the edge of the grid is not a failure, it is the edge. Only a tile that
+      // genuinely has nowhere to go is worth interrupting the reader for.
+      if (refusal.kind === 'overlap') {
+        refuse(
+          action,
+          `every place in that direction is taken, starting with “${titleOf(refusal.withId)}”`,
+        )
+      }
     },
-    [columns, entries, refuse, titleOf],
+    [refuse, titleOf],
   )
 
   const addWidget = useCallback(
@@ -153,11 +159,35 @@ export function useEditor(): EditorApi {
         const rect = isRecord(entry) ? readRect(entry) : null
         if (!rect) return
 
-        const next = { ...rect, x: rect.x + dx, y: rect.y + dy }
         const id = readId(entry) ?? `position-${index}`
-        if (place(id, next, 'Move')) replace(index, (current) => ({ ...current, layout: next }))
+        const placements = placementsOf(entries)
+
+        // Two tiles of the same size trade places, which is what a full row of metrics needs.
+        const swap = swapCandidate(placements, id, rect, { x: dx, y: dy }, columns)
+
+        if (swap) {
+          const theirRect = swap.rect
+          setDraftWidgets(
+            entries.map((candidate, at) => {
+              if (!isRecord(candidate)) return candidate
+              if (at === index) return { ...candidate, layout: theirRect }
+              if (readId(candidate) === swap.id) return { ...candidate, layout: rect }
+              return candidate
+            }),
+          )
+          return
+        }
+
+        const outcome = nextPlacement(placements, id, rect, { x: dx, y: dy }, columns)
+
+        if ('refusal' in outcome) {
+          reportRefusal('Move', outcome.refusal)
+          return
+        }
+
+        replace(index, (current) => ({ ...current, layout: outcome.rect }))
       },
-      [entries, place, replace],
+      [columns, entries, reportRefusal, replace, setDraftWidgets],
     ),
 
     resizeWidget: useCallback(
@@ -166,11 +196,17 @@ export function useEditor(): EditorApi {
         const rect = isRecord(entry) ? readRect(entry) : null
         if (!rect) return
 
-        const next = { ...rect, w: rect.w + dw, h: rect.h + dh }
         const id = readId(entry) ?? `position-${index}`
-        if (place(id, next, 'Resize')) replace(index, (current) => ({ ...current, layout: next }))
+        const outcome = clampResize(placementsOf(entries), id, rect, { w: dw, h: dh }, columns)
+
+        if ('refusal' in outcome) {
+          reportRefusal('Resize', outcome.refusal)
+          return
+        }
+
+        replace(index, (current) => ({ ...current, layout: outcome.rect }))
       },
-      [entries, place, replace],
+      [columns, entries, reportRefusal, replace],
     ),
   }
 }

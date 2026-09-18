@@ -138,3 +138,98 @@ export function placementsOf(entries: ReadonlyArray<unknown>): Placement[] {
     return [{ id: entry.id, rect: { x, y, w, h } }]
   })
 }
+
+/**
+ * Where a tile ends up when it is nudged in a direction. Arrow keys should feel like arranging
+ * things, not like failing: a step into an occupied cell keeps looking in the same direction and
+ * lands in the first free place, and a step into the wall is simply not a move.
+ */
+export function nextPlacement(
+  placements: ReadonlyArray<Placement>,
+  id: string,
+  rect: Rect,
+  step: { x: number; y: number },
+  columns: number,
+): { rect: Rect } | { refusal: PlacementRefusal } {
+  const maxSteps = Math.max(columns, CONFIG_LIMITS.MAX_GRID_ROWS)
+  let blockedBy: PlacementRefusal | null = null
+
+  for (let distance = 1; distance <= maxSteps; distance += 1) {
+    const candidate = {
+      ...rect,
+      x: rect.x + step.x * distance,
+      y: rect.y + step.y * distance,
+    }
+
+    const refusal = checkPlacement(placements, id, candidate, columns)
+
+    // Out of bounds ends the search: there is nothing further in that direction.
+    if (refusal?.kind === 'out-of-bounds') {
+      return { refusal: blockedBy ?? refusal }
+    }
+
+    if (refusal === null) return { rect: candidate }
+
+    blockedBy = refusal
+  }
+
+  return { refusal: blockedBy ?? { kind: 'out-of-bounds', message: 'there is nowhere to move it' } }
+}
+
+/** Resizing stops at whatever fits rather than refusing outright. */
+export function clampResize(
+  placements: ReadonlyArray<Placement>,
+  id: string,
+  rect: Rect,
+  step: { w: number; h: number },
+  columns: number,
+): { rect: Rect } | { refusal: PlacementRefusal } {
+  const wanted = {
+    ...rect,
+    w: Math.min(Math.max(rect.w + step.w, 1), columns - rect.x),
+    h: Math.min(Math.max(rect.h + step.h, 1), CONFIG_LIMITS.MAX_ROW_SPAN),
+  }
+
+  if (wanted.w === rect.w && wanted.h === rect.h) {
+    return { refusal: { kind: 'out-of-bounds', message: 'it is already as big as it can be here' } }
+  }
+
+  const refusal = checkPlacement(placements, id, wanted, columns)
+  return refusal ? { refusal } : { rect: wanted }
+}
+
+/**
+ * The tile a step would land on, when it is exactly one tile of the same size. Two widgets of
+ * the same footprint trade places, which is what a row of equal metrics needs: hopping is no use
+ * when every cell in the row is taken.
+ */
+export function swapCandidate(
+  placements: ReadonlyArray<Placement>,
+  id: string,
+  rect: Rect,
+  step: { x: number; y: number },
+  columns: number,
+): Placement | null {
+  const target = { ...rect, x: rect.x + step.x, y: rect.y + step.y }
+
+  if (target.x < 0 || target.y < 0 || target.x + target.w > columns) return null
+
+  const hit = placements.filter(
+    (placement) => placement.id !== id && overlapsRect(placement.rect, target),
+  )
+
+  const only = hit[0]
+  if (hit.length !== 1 || !only) return null
+  if (only.rect.w !== rect.w || only.rect.h !== rect.h) return null
+
+  return only
+}
+
+function overlapsRect(left: Rect, right: Rect) {
+  return (
+    left.x < right.x + right.w &&
+    right.x < left.x + left.w &&
+    left.y < right.y + right.h &&
+    right.y < left.y + left.h
+  )
+}

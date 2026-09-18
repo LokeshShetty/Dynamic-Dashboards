@@ -46,10 +46,9 @@ export function ChartWidgetTile({ dashboardId, dataset, widget, filters }: Props
       {(result) => {
         if (result.kind !== 'series') return null
 
-        const formatter = resolveFormatter(
-          result.series[0]?.field ?? result.x,
-          widget.series[0]?.format,
-        )
+        const measured = result.series[0]?.field ?? result.x
+        const formatter = resolveFormatter(measured, widget.series[0]?.format)
+        const tickFormatter = resolveFormatter(measured, widget.series[0]?.format, 'compact')
 
         return (
           <div className="min-h-36 flex-1">
@@ -59,6 +58,7 @@ export function ChartWidgetTile({ dashboardId, dataset, widget, filters }: Props
                 points={result.points}
                 stacked={widget.stacked ?? false}
                 format={formatter.ok ? formatter.data : (value) => String(value ?? '')}
+                formatTick={tickFormatter.ok ? tickFormatter.data : (value) => String(value ?? '')}
                 series={result.series.map((series, index) => ({
                   key: series.key,
                   label:

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 import { useQueryClient } from '@tanstack/react-query'
-import { DatabaseBackup, FlaskConical, RotateCcw, X } from 'lucide-react'
+import { Check, DatabaseBackup, FlaskConical, RotateCcw, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { HostileConfigPicker } from '@/hostile/_components/hostile-config-picker'
@@ -11,6 +11,7 @@ import { dashboardStore } from '@/storage/_lib/dashboard-store'
 import { describeStorageFailure, toStorageFailure } from '@/storage/_lib/storage-error'
 
 import { CHAOS_LIMITS } from '../_constants'
+import { describeActiveChaos } from '../_lib/describe-chaos'
 import { ChaosSlider } from './chaos-slider'
 import { ChaosWorldControls } from './chaos-world-controls'
 
@@ -30,6 +31,9 @@ export function ChaosPanel({ className }: { className?: string }) {
   const timeoutRate = useAppStore((state) => state.timeoutRate)
   const corruptNextResponse = useAppStore((state) => state.corruptNextResponse)
   const epoch = useAppStore((state) => state.epoch)
+  const renamedFields = useAppStore((state) => state.renamedFields)
+  const retypedFields = useAppStore((state) => state.retypedFields)
+  const droppedDatasets = useAppStore((state) => state.droppedDatasets)
   const setSettings = useAppStore((state) => state.setSettings)
   const restoreWorld = useAppStore((state) => state.restoreWorld)
   const reset = useAppStore((state) => state.reset)
@@ -61,17 +65,37 @@ export function ChaosPanel({ className }: { className?: string }) {
     }
   }
 
+  const active = describeActiveChaos({
+    latencyMs,
+    jitterMs,
+    failureRate,
+    timeoutRate,
+    corruptNextResponse,
+    renamedFields,
+    retypedFields,
+    droppedDatasets,
+    epoch,
+  })
+
   if (!isOpen) {
     return (
-      <Button
-        variant="solid"
-        className={cn('fixed right-4 bottom-4 shadow-lg', className)}
-        aria-expanded={false}
-        onClick={() => setIsOpen(true)}
-      >
-        <FlaskConical aria-hidden="true" className="size-4" />
-        Chaos
-      </Button>
+      <div className={cn('fixed right-4 bottom-4 flex items-center gap-2', className)}>
+        {active.length > 0 ? (
+          <output className="border-warning bg-warning-surface text-fg rounded-full border px-2 py-1 text-xs shadow-lg tabular-nums">
+            {active.join(' · ')}
+          </output>
+        ) : null}
+
+        <Button
+          variant="solid"
+          className="shadow-lg"
+          aria-expanded={false}
+          onClick={() => setIsOpen(true)}
+        >
+          <FlaskConical aria-hidden="true" className="size-4" />
+          Chaos
+        </Button>
+      </div>
     )
   }
 
@@ -142,8 +166,10 @@ export function ChaosPanel({ className }: { className?: string }) {
         <Button
           size="sm"
           variant={corruptNextResponse ? 'danger' : 'outline'}
+          aria-pressed={corruptNextResponse}
           onClick={() => setSettings({ corruptNextResponse: !corruptNextResponse })}
         >
+          {corruptNextResponse ? <Check aria-hidden="true" className="size-3" /> : null}
           {corruptNextResponse ? 'Corruption armed for next response' : 'Corrupt next response'}
         </Button>
 

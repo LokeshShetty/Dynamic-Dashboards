@@ -1,10 +1,14 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 
+import { cn } from '@/lib/utils'
+
 import { WidgetToolbar } from './widget-toolbar'
 
 type Props = {
   title: string
   position: { x: number; y: number; w: number; h: number } | null
+  isSelected: boolean
+  onSelect: () => void
   actions: {
     onRename: () => void
     onEdit: () => void
@@ -24,18 +28,26 @@ const DIRECTIONS: Record<string, { x: number; y: number } | undefined> = {
 }
 
 /**
- * Edit chrome around a tile. The tile keeps rendering through the same frame, so what is being
- * arranged is the real widget in its real state, not a placeholder standing in for one.
+ * Edit chrome around a tile. The toolbar sits in its own row above the widget rather than over
+ * it, so the title the reader is arranging stays readable the whole time, and the arrow cluster
+ * appears only on the tile being worked on: twelve buttons on every tile is not an editor, it is
+ * a wall.
  *
  * The toolbar and the keyboard do the same things: arrows move, shift and arrows resize, while
- * focus is anywhere in the tile. The move handle is the focus target that says so out loud, and
- * keys are ignored inside form controls so a table's own controls keep working.
+ * focus is anywhere in the tile. Keys are ignored inside form controls so a table's own controls
+ * keep working.
  */
-export function EditableWidget({ title, position, actions, children }: Props) {
+export function EditableWidget({
+  title,
+  position,
+  isSelected,
+  onSelect,
+  actions,
+  children,
+}: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const actionsRef = useRef(actions)
 
-  // The listener below is attached once, so it reads the current actions through a ref.
   useEffect(() => {
     actionsRef.current = actions
   }, [actions])
@@ -65,12 +77,23 @@ export function EditableWidget({ title, position, actions, children }: Props) {
   return (
     <div
       ref={containerRef}
-      className="border-accent/60 relative flex min-h-0 w-full rounded-lg border border-dashed p-1"
+      onFocusCapture={onSelect}
+      onPointerDownCapture={onSelect}
+      className={cn(
+        'flex min-h-0 w-full flex-col gap-1 rounded-lg border border-dashed p-1 transition-colors',
+        isSelected ? 'border-accent bg-surface-muted/40' : 'border-border',
+      )}
     >
-      <div className="absolute -top-3 right-1 z-10">
-        <WidgetToolbar title={title} position={describedPosition} {...actions} />
+      <div className="flex justify-end">
+        <WidgetToolbar
+          title={title}
+          position={describedPosition}
+          isSelected={isSelected}
+          {...actions}
+        />
       </div>
-      {children}
+
+      <div className="flex min-h-0 flex-1">{children}</div>
     </div>
   )
 }

@@ -14,11 +14,24 @@ export type ValueFormatter = (value: DataValue) => string
 
 const CENTS_IN_A_UNIT = 100
 
+/**
+ * Axis ticks get the compact variant: $100,000 does not fit in an axis gutter, and widening the
+ * gutter to fit it takes the space away from the chart. The full value stays in the tooltip.
+ */
+export type FormatVariant = 'full' | 'compact'
+
 export function resolveFormatter(
   field: ResolvedField,
   format: NumberFormat | undefined,
+  variant: FormatVariant = 'full',
 ): Result<ValueFormatter, string> {
-  if (!format) return ok((value) => formatByType(value, field))
+  if (!format) {
+    return ok((value) =>
+      variant === 'compact' && typeof value === 'number'
+        ? compactNumber(value)
+        : formatByType(value, field),
+    )
+  }
 
   if (format.style === 'currency') {
     if (!isMoneyUnit(field.unit)) {
@@ -31,8 +44,9 @@ export function resolveFormatter(
     const formatter = new Intl.NumberFormat(undefined, {
       style: 'currency',
       currency,
-      minimumFractionDigits: format.decimals ?? 2,
-      maximumFractionDigits: format.decimals ?? 2,
+      notation: variant === 'compact' ? 'compact' : 'standard',
+      minimumFractionDigits: variant === 'compact' ? 0 : (format.decimals ?? 2),
+      maximumFractionDigits: variant === 'compact' ? 1 : (format.decimals ?? 2),
     })
 
     return ok((value) =>
@@ -42,11 +56,12 @@ export function resolveFormatter(
     )
   }
 
+  const isCompact = format.style === 'compact' || variant === 'compact'
   const formatter = new Intl.NumberFormat(undefined, {
-    notation: format.style === 'compact' ? 'compact' : 'standard',
+    notation: isCompact ? 'compact' : 'standard',
     style: format.style === 'percent' ? 'percent' : 'decimal',
-    minimumFractionDigits: format.decimals,
-    maximumFractionDigits: format.decimals ?? (format.style === 'compact' ? 1 : 2),
+    minimumFractionDigits: isCompact ? 0 : format.decimals,
+    maximumFractionDigits: isCompact ? 1 : (format.decimals ?? 2),
   })
 
   return ok((value) =>
@@ -71,6 +86,12 @@ export function formatByType(value: DataValue, field: ResolvedField): string {
   if (typeof value === 'boolean') return value ? 'yes' : 'no'
 
   return String(value)
+}
+
+function compactNumber(value: number): string {
+  return new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 }).format(
+    value,
+  )
 }
 
 export function formatDate(iso: string): string {

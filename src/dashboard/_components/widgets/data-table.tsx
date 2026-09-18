@@ -93,15 +93,16 @@ export function DataTable({ columns, rows, matchedRows, sort, pageSize }: Props)
           </thead>
           <tbody>
             {visible.map((row, rowIndex) => (
-              <tr key={rowIndex} className="border-border/60 border-b last:border-0">
+              <tr
+                key={rowIndex}
+                className="border-border/60 hover:bg-surface-muted border-b last:border-0"
+              >
                 {columns.map((column) => (
                   <td
                     key={column.name}
                     className={cn(
-                      'text-fg p-2 whitespace-nowrap',
-                      column.kind === 'ok' && column.align === 'right'
-                        ? 'text-right tabular-nums'
-                        : 'text-left',
+                      'text-fg p-2 whitespace-nowrap tabular-nums',
+                      column.kind === 'ok' && column.align === 'right' ? 'text-right' : 'text-left',
                     )}
                   >
                     {column.kind === 'ok' ? (
