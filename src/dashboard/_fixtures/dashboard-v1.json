@@ -1,32 +1,38 @@
 {
   "schemaVersion": 1,
   "id": "legacy",
-  "name": "Operations overview (v1)",
-  "source": "orders",
+  "name": "Claims operations (v1)",
+  "source": "claims",
   "widgets": [
     {
-      "id": "revenue",
+      "id": "billed",
       "type": "metric",
-      "title": "Revenue",
-      "field": "revenue",
+      "title": "Billed (cents)",
+      "field": "amount_cents",
       "agg": "sum",
-      "format": "currency"
+      "format": "compact"
     },
-    { "id": "orders", "type": "metric", "title": "Orders", "field": "id", "agg": "count" },
+    {
+      "id": "claim-count",
+      "type": "metric",
+      "title": "Claims",
+      "field": "claim_id",
+      "agg": "count"
+    },
     {
       "id": "trend",
       "type": "chart",
-      "title": "Revenue by day",
+      "title": "Billed by day",
       "chart": "line",
-      "x": "createdAt",
-      "series": ["revenue"],
+      "x": "submitted_at",
+      "series": ["amount_cents"],
       "agg": "sum"
     },
     {
       "id": "recent",
       "type": "table",
-      "title": "Recent orders",
-      "columns": ["createdAt", "customer", "region", "revenue"],
+      "title": "Recent claims",
+      "columns": ["claim_id", "submitted_at", "payer", "amount_cents"],
       "rows": 5
     },
     {

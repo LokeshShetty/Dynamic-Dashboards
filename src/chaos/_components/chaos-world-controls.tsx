@@ -1,0 +1,108 @@
+import { useState } from 'react'
+
+import { Button } from '@/components/ui/button'
+import { FIELD_TYPES, type FieldType } from '@/constants/data'
+import { DATASET_IDS } from '@/data/_constants'
+import { worldFieldNames } from '@/data/_lib/world'
+import { useAppStore } from '@/lib/store'
+
+const SELECT_CLASS =
+  'border-border bg-surface-raised text-fg h-7 rounded-md border px-1 text-xs min-w-0 flex-1'
+
+/**
+ * Changes to the world rather than to the transport: after any of these, a configuration that
+ * was correct when it was saved may no longer resolve, which is the point.
+ */
+export function ChaosWorldControls() {
+  const renameField = useAppStore((state) => state.renameField)
+  const changeFieldType = useAppStore((state) => state.changeFieldType)
+  const dropDataset = useAppStore((state) => state.dropDataset)
+
+  const [dataset, setDataset] = useState<string>(DATASET_IDS[0])
+  const [field, setField] = useState<string>(worldFieldNames(DATASET_IDS[0])[0] ?? '')
+  const [type, setType] = useState<FieldType>('text')
+
+  const fields = worldFieldNames(dataset)
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex gap-1">
+        <label className="sr-only" htmlFor="chaos-dataset">
+          Dataset
+        </label>
+        <select
+          id="chaos-dataset"
+          className={SELECT_CLASS}
+          value={dataset}
+          onChange={(event) => {
+            setDataset(event.target.value)
+            setField(worldFieldNames(event.target.value)[0] ?? '')
+          }}
+        >
+          {DATASET_IDS.map((id) => (
+            <option key={id} value={id}>
+              {id}
+            </option>
+          ))}
+        </select>
+
+        <label className="sr-only" htmlFor="chaos-field">
+          Field
+        </label>
+        <select
+          id="chaos-field"
+          className={SELECT_CLASS}
+          value={field}
+          onChange={(event) => setField(event.target.value)}
+        >
+          {fields.map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="flex flex-wrap gap-1">
+        <Button
+          size="sm"
+          disabled={field === ''}
+          onClick={() => renameField(dataset, field, `${field}_v2`)}
+        >
+          Rename to {field === '' ? 'field' : `${field}_v2`}
+        </Button>
+
+        <label className="sr-only" htmlFor="chaos-type">
+          New field type
+        </label>
+        <select
+          id="chaos-type"
+          className={SELECT_CLASS}
+          value={type}
+          onChange={(event) => {
+            const next = FIELD_TYPES.find((candidate) => candidate === event.target.value)
+            if (next) setType(next)
+          }}
+        >
+          {FIELD_TYPES.map((candidate) => (
+            <option key={candidate} value={candidate}>
+              {candidate}
+            </option>
+          ))}
+        </select>
+
+        <Button
+          size="sm"
+          disabled={field === ''}
+          onClick={() => changeFieldType(dataset, field, type)}
+        >
+          Change type
+        </Button>
+
+        <Button size="sm" variant="danger" onClick={() => dropDataset(dataset)}>
+          Drop dataset
+        </Button>
+      </div>
+    </div>
+  )
+}

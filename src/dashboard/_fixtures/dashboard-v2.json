@@ -1,125 +1,128 @@
 {
   "schemaVersion": 2,
   "id": "demo",
-  "title": "Operations overview",
+  "title": "Claims operations",
   "version": 4,
   "updatedAt": "2026-09-01T09:00:00.000Z",
-  "dataset": "orders",
+  "dataset": "claims",
   "layout": { "columns": 12 },
   "filters": [
     {
-      "id": "region",
+      "id": "status",
       "kind": "select",
-      "label": "Region",
-      "field": "region",
+      "label": "Status",
+      "field": "status",
       "options": [
-        { "value": "emea", "label": "EMEA" },
-        { "value": "amer", "label": "Americas" },
-        { "value": "apac", "label": "APAC" }
+        { "value": "submitted", "label": "Submitted" },
+        { "value": "in_review", "label": "In review" },
+        { "value": "paid", "label": "Paid" },
+        { "value": "denied", "label": "Denied" },
+        { "value": "appealed", "label": "Appealed" }
       ]
     },
     {
-      "id": "channel",
+      "id": "payer",
       "kind": "multi-select",
-      "label": "Channel",
-      "field": "channel",
+      "label": "Payer",
+      "field": "payer",
       "options": [
-        { "value": "direct", "label": "Direct" },
-        { "value": "partner", "label": "Partner" },
-        { "value": "marketplace", "label": "Marketplace" }
+        { "value": "Meridian Health Plan", "label": "Meridian Health Plan" },
+        { "value": "Cascade Mutual", "label": "Cascade Mutual" },
+        { "value": "Northwind Care", "label": "Northwind Care" },
+        { "value": "Brightline Benefits", "label": "Brightline Benefits" }
       ]
     },
     {
-      "id": "placed",
+      "id": "submitted",
       "kind": "date-range",
-      "label": "Placed",
-      "field": "createdAt",
+      "label": "Submitted",
+      "field": "submitted_at",
       "defaultValue": { "from": "2026-08-01", "to": "2026-08-31" }
     },
     {
-      "id": "customer",
+      "id": "claim",
       "kind": "search",
-      "label": "Customer",
-      "field": "customer",
-      "placeholder": "Search customers"
+      "label": "Claim",
+      "field": "claim_id",
+      "placeholder": "Search claim ids"
     }
   ],
   "widgets": [
     {
-      "id": "revenue",
+      "id": "billed",
       "kind": "metric",
-      "title": "Revenue",
+      "title": "Billed (cents)",
       "layout": { "colSpan": 3, "rowSpan": 1 },
-      "value": { "field": "revenue", "aggregate": "sum" },
-      "format": { "style": "currency", "currency": "USD", "decimals": 0 }
+      "value": { "field": "amount_cents", "aggregate": "sum" },
+      "format": { "style": "compact" }
     },
     {
-      "id": "orders",
+      "id": "claim-count",
       "kind": "metric",
-      "title": "Orders",
+      "title": "Claims",
       "layout": { "colSpan": 3, "rowSpan": 1 },
-      "value": { "field": "id", "aggregate": "count" }
+      "value": { "field": "claim_id", "aggregate": "count" }
     },
     {
-      "id": "units",
+      "id": "line-items",
       "kind": "metric",
-      "title": "Units per order",
+      "title": "Line items per claim",
       "layout": { "colSpan": 3, "rowSpan": 1 },
-      "value": { "field": "units", "aggregate": "avg" },
+      "value": { "field": "line_items", "aggregate": "avg" },
       "format": { "style": "plain", "decimals": 1 }
     },
     {
-      "id": "refund-rate",
+      "id": "largest-claim",
       "kind": "metric",
-      "title": "Largest order",
+      "title": "Largest claim (cents)",
       "layout": { "colSpan": 3, "rowSpan": 1 },
-      "value": { "field": "revenue", "aggregate": "max" },
-      "format": { "style": "currency", "currency": "USD", "decimals": 0 }
+      "value": { "field": "amount_cents", "aggregate": "max" },
+      "format": { "style": "compact" }
     },
     {
-      "id": "revenue-trend",
+      "id": "billed-by-day",
       "kind": "chart",
-      "title": "Revenue by day",
+      "title": "Billed by day",
       "layout": { "colSpan": 8, "rowSpan": 2 },
       "chartType": "line",
-      "x": { "field": "createdAt", "bucket": "day" },
-      "series": [{ "field": "revenue", "aggregate": "sum", "label": "Revenue" }]
+      "x": { "field": "submitted_at", "bucket": "day" },
+      "series": [{ "field": "amount_cents", "aggregate": "sum", "label": "Billed" }]
     },
     {
-      "id": "region-split",
+      "id": "claims-by-payer",
       "kind": "chart",
-      "title": "Units by region",
+      "title": "Claims by payer",
       "layout": { "colSpan": 4, "rowSpan": 2 },
       "chartType": "bar",
-      "x": { "field": "region" },
-      "series": [{ "field": "units", "aggregate": "sum", "label": "Units" }]
+      "x": { "field": "payer" },
+      "series": [{ "field": "claim_id", "aggregate": "count", "label": "Claims" }]
     },
     {
-      "id": "recent-orders",
+      "id": "recent-claims",
       "kind": "table",
-      "title": "Recent orders",
+      "title": "Recent claims",
       "layout": { "colSpan": 12, "rowSpan": 2 },
       "columns": [
-        { "field": "createdAt", "label": "Placed" },
-        { "field": "customer", "label": "Customer" },
-        { "field": "region", "label": "Region" },
+        { "field": "claim_id", "label": "Claim" },
+        { "field": "submitted_at", "label": "Submitted" },
+        { "field": "payer", "label": "Payer" },
         { "field": "status", "label": "Status" },
         {
-          "field": "revenue",
-          "label": "Revenue",
+          "field": "amount_cents",
+          "label": "Amount (cents)",
           "align": "right",
-          "format": { "style": "currency", "currency": "USD", "decimals": 2 }
+          "format": { "style": "plain", "decimals": 0 }
         }
       ],
       "pageSize": 10,
-      "sort": { "field": "createdAt", "direction": "desc" }
+      "sort": { "field": "submitted_at", "direction": "desc" }
     },
     {
       "id": "reading-note",
       "kind": "text",
       "title": "How to read this",
       "layout": { "colSpan": 12, "rowSpan": 1 },
-      "body": "Figures cover the selected date range only. A widget that cannot reach its data says so on the tile instead of showing a stale number.",
+      "body": "Figures cover the selected filters only. A widget that cannot reach its data says so on the tile instead of showing a stale number.",
       "tone": "note"
     }
   ]

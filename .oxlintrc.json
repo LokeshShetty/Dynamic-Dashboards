@@ -1,16 +1,31 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["react", "typescript", "oxc", "import", "jsx-a11y"],
-  "categories": { "correctness": "error", "suspicious": "error", "perf": "warn" },
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "warn"
+  },
   "rules": {
     "no-console": "error",
     "react/no-danger": "error",
     "react/rules-of-hooks": "error",
     "react/exhaustive-deps": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }],
+    "react/only-export-components": [
+      "warn",
+      {
+        "allowConstantExport": true
+      }
+    ],
     "react/react-in-jsx-scope": "off",
     "typescript/no-explicit-any": "error",
-    "import/no-unassigned-import": "off"
+    "import/no-unassigned-import": "off",
+    "no-underscore-dangle": [
+      "error",
+      {
+        "allow": ["__chaos"]
+      }
+    ]
   },
   "ignorePatterns": ["dist", "node_modules", "coverage"]
 }

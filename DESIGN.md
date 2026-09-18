@@ -22,7 +22,7 @@ Three failure modes the promise rules out:
 | ----------------------------------------- | ----------- |
 | 1. Project setup                          | Done        |
 | 2. Config schema, migrations, tests       | Done        |
-| 3. Data layer, chaos controls, fetch hook | Not started |
+| 3. Data layer, chaos controls, fetch hook | Done        |
 | 4. Rendering and the four widget types    | Not started |
 | 5. Dashboard filters                      | Not started |
 | 6. Widget editor                          | Not started |
@@ -153,6 +153,103 @@ id first.
 | Truncated or trailing comma JSON                | Error screen with the parser message and the original text                                        |
 | A v1 chart with no aggregate                    | The migration leaves it missing, so that one tile reports it                                      |
 
+## The data layer
+
+Three synthetic datasets, generated from a fixed seed and anchored to a fixed date so every
+reviewer sees the same numbers: `claims` (800 rows), `providers` (60) and
+`credentialing_applications` (150). Nothing in them describes a real person: parties are
+organisations, identifiers are sequential, reviewers are queues. Each dataset exposes its own
+schema, field name to type, through the same asynchronous client that serves data, because a
+dashboard binds to the schema and the schema is exactly what chaos can change.
+
+The client is in memory but behaves like a network: every call is asynchronous, slow by default,
+sometimes fails, and takes an `AbortSignal` that it actually honours. A request that is
+cancelled stops waiting; it does not resolve into a void.
+
+### Chaos controls
+
+Defaults are 1200 ms latency with 800 ms of jitter, a 10 percent failure rate and a 2 percent
+timeout rate, so a reviewer meets loading, retry and error states without touching anything.
+
+| Control               | What it does                                                 | Changes the truth |
+| --------------------- | ------------------------------------------------------------ | ----------------- |
+| Latency, jitter       | How long every request takes                                 | No                |
+| Failure rate          | Share of requests that are refused                           | No                |
+| Timeout rate          | Share of requests that never answer at all                   | No                |
+| Corrupt next response | The next payload comes back malformed                        | No                |
+| Rename field          | `amount_cents` answers only to `amount_cents_v2` from now on | Yes               |
+| Change field type     | A number field starts reporting and serving text             | Yes               |
+| Drop dataset          | The dataset stops existing                                   | Yes               |
+
+The three that change the truth bump a **chaos epoch**. The epoch is part of every query key, so
+the moment the world changes, every widget asks again rather than continuing to show an answer
+about a world that is gone.
+
+Three ways to drive it, all the same store:
+
+- The panel, bottom right of the dashboard.
+- The query string: `?latency=1500&jitter=0&failRate=0.3&timeoutRate=0.1`. A parameter that does
+  not parse is ignored and logged, never quietly reinterpreted.
+- `window.__chaos` in the console: `.set({ latencyMs: 4000 })`, `.corruptNextResponse()`,
+  `.renameField('claims', 'amount_cents', 'amount_cents_v2')`,
+  `.changeFieldType('claims', 'amount_cents', 'text')`, `.dropDataset('claims')`,
+  `.restoreWorld()`, `.reset()`.
+
+### Failure vocabulary
+
+The client throws one typed error, and the kind decides everything downstream:
+
+| Kind               | Cause                                  | Retried | Shown as             |
+| ------------------ | -------------------------------------- | ------- | -------------------- |
+| `request-failed`   | The source refused                     | Yes     | Error                |
+| `timeout`          | No answer within 8 seconds             | Yes     | Error                |
+| `aborted`          | The caller cancelled                   | No      | Nothing, it is gone  |
+| `corrupt-response` | The payload failed its own schema      | No      | Error                |
+| `unknown-dataset`  | The dataset is gone                    | No      | Unresolvable binding |
+| `unknown-field`    | The field was renamed or never existed | No      | Unresolvable binding |
+| `field-type`       | The field cannot support the aggregate | No      | Unresolvable binding |
+
+Binding failures are never retried: waiting does not bring back a field that was renamed. They
+are also worded differently on the tile, because the fix is to edit the configuration, not to
+try again.
+
+### useWidgetData
+
+One hook maps a widget's query to the state its frame renders: `loading`, `ok`, `empty`,
+`stale`, `error`, `unresolvable-binding`.
+
+The query key is `['widget-data', dashboardId, widgetId, chaosEpoch, query]`, and the query
+object carries the dataset, the binding and the filter values. Everything that can change the
+answer is in the key, which is what makes a late answer harmless: it is written to the key it
+was asked under, and that key is no longer the one on screen. The one test in this phase proves
+exactly that, with fake timers: a slow question, a filter change, the fast answer, then the slow
+answer landing afterwards, and the screen still showing the fast one.
+
+Two states deserve their wording:
+
+- **empty** is not zero. A metric whose value is null is empty, because rendering it as `0` is
+  the clearest possible way to show something untrue.
+- **stale** keeps the last good data together with the time it was fetched, the failure that
+  stopped the refresh and when that happened. Old numbers are never presented as live ones, and
+  they are never silently thrown away either.
+
+### Which guarantees come from where
+
+| Guarantee                                                            | Source                                                 |
+| -------------------------------------------------------------------- | ------------------------------------------------------ |
+| A response is stored against the key it was requested under          | TanStack Query                                         |
+| Identical in-flight keys are deduplicated                            | TanStack Query                                         |
+| Retry scheduling, backoff, and the attempt counter                   | TanStack Query                                         |
+| The last successful data survives a failed refetch                   | TanStack Query                                         |
+| An `AbortSignal` is handed to the fetch and fired on teardown        | TanStack Query                                         |
+| That signal is actually respected, so cancelled work stops           | Our client                                             |
+| The key contains everything that changes the answer                  | Our hook, and the reason the race test passes          |
+| The 8 second timeout                                                 | Our client. TanStack Query has no timeout of its own   |
+| Only transport failures retry, binding failures never do             | Our retry predicate                                    |
+| The world changing invalidates every widget                          | Our chaos epoch. Query cannot know a field was renamed |
+| Empty is distinguished from zero, stale from fresh, binding from bug | Our state mapping                                      |
+| A malformed payload is rejected rather than rendered                 | Our response schemas                                   |
+
 ## Decision log
 
 ### Phase 1: project setup
@@ -180,6 +277,19 @@ id first.
 | Reserved keys rejected, and bindings may not name them           | `row['__proto__']` hands a widget the prototype chain instead of data. Rejecting at the document level and at the binding level closes both doors.                                                                                                 |
 | The only entry point takes text, not an object                   | The size guard needs the text, and one path means the editor preview and the stored configuration cannot take different routes to different verdicts.                                                                                              |
 | Errors are returned, never thrown                                | Every failure has to reach a screen. A thrown error in a loader is one refactor away from a blank page.                                                                                                                                            |
+
+### Phase 3: data layer
+
+| Decision                                            | Why                                                                                                                                                                        |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Chaos lives in a Zustand store, not in React state  | A request has to see the conditions in force at the moment it runs. The store is readable outside React, so the client, the console handle and the test all see one truth. |
+| World mutations are a view over immutable data      | Renames and type changes are applied when serving, so nothing is destroyed and restoreWorld is honest rather than a second guess at what the data used to be.              |
+| Binding failures are never retried                  | Retrying a renamed field spends three attempts and several seconds to arrive at the same answer, and delays the one message that helps: the field is gone.                 |
+| The timeout is an abort, not a promise race         | A race leaves the losing request running. Aborting means the work actually stops, which is the difference between a timeout and a lie about one.                           |
+| The data layer validates its own responses          | A fake source is still a boundary. The corrupt-next-response control proves the renderer does not trust a payload just because it came from inside the app.                |
+| The chaos epoch is part of every query key          | It is the only way a cache can find out that a saved configuration now points at a world that no longer matches it.                                                        |
+| Empty is a state, not a zero                        | A metric with no matching rows that renders 0 is the most confident possible way to show something untrue.                                                                 |
+| The client throws, everything else returns a Result | TanStack Query decides what to retry from a rejected promise. The throw is confined to that boundary and carries a typed error, so nothing parses a message to decide.     |
 
 ## Open questions
 

@@ -1,3 +1,5 @@
+import type { DataError, DataResult } from '@/data/_types'
+
 import type { DashboardShell, Widget } from './_lib/config.schema'
 
 /** One validation problem, with the path it was found at, ready to show to a user. */
@@ -42,3 +44,23 @@ export type DashboardLoad =
     }
   | { kind: 'unsupported-version'; found: number; supported: number; rawText: string }
   | { kind: 'invalid'; error: ConfigError; rawText: string }
+
+/**
+ * What a widget knows about its data right now. Every branch is a thing the frame can show,
+ * and none of them can be mistaken for another: stale carries both the data and the failure,
+ * so old numbers are never presented as live ones.
+ */
+export type WidgetDataState =
+  | { kind: 'loading'; attempt: number; maxAttempts: number }
+  | { kind: 'ok'; result: DataResult; fetchedAt: number; isRefreshing: boolean }
+  | { kind: 'empty'; fetchedAt: number; isRefreshing: boolean }
+  | {
+      kind: 'stale'
+      result: DataResult
+      fetchedAt: number
+      failure: DataError
+      failedAt: number
+      isRefreshing: boolean
+    }
+  | { kind: 'error'; error: DataError; attempt: number; maxAttempts: number }
+  | { kind: 'unresolvable-binding'; error: DataError }
