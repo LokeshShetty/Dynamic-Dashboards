@@ -45,7 +45,7 @@ export function DashboardGrid({
         )
 
         return (
-          <div key={gridKeyFor(slot.index)} className="flex min-h-0">
+          <div key={gridKeyFor(slot.index)} className="flex h-full min-h-0 w-full">
             {wrapTile ? wrapTile(slot, tile) : tile}
           </div>
         )

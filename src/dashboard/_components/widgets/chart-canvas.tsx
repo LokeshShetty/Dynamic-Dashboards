@@ -107,7 +107,7 @@ export function ChartCanvas({ chartType, points, series, stacked, format, format
 
         {/* One bar per category reads as a set of categories, so the legend names them. */}
         {isCategorical ? (
-          <ul className="text-fg-muted flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+          <ul className="text-fg-muted flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs">
             {rows.map((row, index) => (
               <li key={String(row.x)} className="inline-flex items-center gap-1">
                 <span
@@ -125,7 +125,7 @@ export function ChartCanvas({ chartType, points, series, stacked, format, format
   }
 
   return (
-    <ResponsiveContainer width="100%" height="100%" minHeight={140}>
+    <ResponsiveContainer width="100%" height="100%" minHeight={80}>
       <LineChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
         {shared}
         {series.length > 1 ? <Legend wrapperStyle={LEGEND_STYLE} /> : null}

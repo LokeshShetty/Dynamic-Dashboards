@@ -55,7 +55,7 @@ export const DEFAULT_SIZE_BY_KIND = {
 export const DEFAULT_GRID_COLUMNS = 12
 
 /** How the grid is measured on screen: one row, the gap between tiles, and a width to start at. */
-export const GRID_ROW_HEIGHT = 112
+export const GRID_ROW_HEIGHT = 148
 export const GRID_MARGIN: readonly [number, number] = [12, 12]
 export const GRID_FALLBACK_WIDTH = 1200
 export const DEFAULT_PAGE_SIZE = 10

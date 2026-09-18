@@ -69,7 +69,7 @@ export function WidgetFrame<TResult>({
         className,
       )}
     >
-      <header className="flex items-start justify-between gap-2">
+      <header className="flex shrink-0 items-start justify-between gap-2">
         <div className="flex min-w-0 flex-col gap-1">
           <h3 className="text-fg truncate text-sm font-semibold">
             <BidiText>{title}</BidiText>
@@ -96,7 +96,7 @@ export function WidgetFrame<TResult>({
         </Button>
       </header>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-2">
+      <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto">
         <WidgetErrorBoundary widgetId={widgetId} onRetry={onRefresh}>
           {state.kind === 'invalid' ? (
             <WidgetStatePanel
@@ -174,7 +174,7 @@ export function WidgetFrame<TResult>({
         </WidgetErrorBoundary>
       </div>
 
-      {isTakenOver ? null : <WidgetConfigDisclosure configText={configText} />}
+      {isTakenOver ? null : <WidgetConfigDisclosure configText={configText} className="shrink-0" />}
     </section>
   )
 }

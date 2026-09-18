@@ -44,7 +44,7 @@ export function DataTable({ columns, rows, matchedRows, sort, pageSize }: Props)
   }
 
   return (
-    <div className="flex min-h-0 flex-col gap-2">
+    <div className="flex h-full min-h-0 flex-col gap-2">
       {sort?.kind === 'unresolved' ? (
         <p role="alert" className="text-fg-muted text-xs">
           The configured sort field <code className="text-fg">{sort.field}</code> is not in the
@@ -52,7 +52,7 @@ export function DataTable({ columns, rows, matchedRows, sort, pageSize }: Props)
         </p>
       ) : null}
 
-      <div className="min-h-0 overflow-auto">
+      <div className="min-h-0 flex-1 overflow-auto">
         <table className="w-full border-collapse text-left text-xs">
           <thead>
             <tr className="border-border border-b">
@@ -120,7 +120,7 @@ export function DataTable({ columns, rows, matchedRows, sort, pageSize }: Props)
         </table>
       </div>
 
-      <div className="text-fg-muted flex items-center justify-between gap-2 text-xs">
+      <div className="text-fg-muted flex shrink-0 items-center justify-between gap-2 text-xs">
         <span>
           {matchedRows > rows.length
             ? `Showing the first ${rows.length} of ${matchedRows.toLocaleString()} matching rows`

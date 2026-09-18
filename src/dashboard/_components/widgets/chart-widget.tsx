@@ -51,7 +51,7 @@ export function ChartWidgetTile({ dashboardId, dataset, widget, filters }: Props
         const tickFormatter = resolveFormatter(measured, widget.series[0]?.format, 'compact')
 
         return (
-          <div className="min-h-36 flex-1">
+          <div className="min-h-0 flex-1">
             <Suspense fallback={<ChartSkeleton />}>
               <ChartCanvas
                 chartType={widget.chartType}

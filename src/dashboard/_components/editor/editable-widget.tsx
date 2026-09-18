@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
 
@@ -28,12 +28,16 @@ const DIRECTIONS: Record<string, { x: number; y: number } | undefined> = {
 }
 
 /**
- * Edit chrome around a tile. The toolbar sits in its own row above the widget rather than over
- * it, so the title stays readable while the tile is being arranged.
+ * Edit chrome around a tile.
  *
- * Moving and resizing are gestures on the grid itself: drag the handle, drag the corner. The
- * arrow keys do the same things while focus is in the tile, because a dashboard that can only be
- * arranged with a pointer cannot be arranged by everyone.
+ * A grid row is a fixed height, so the chrome cannot take a row of its own: a toolbar above the
+ * widget is a toolbar taken out of the widget, and the numbers get cut in half. It floats over
+ * the top right corner instead, where the title is not, and only while the tile is hovered or
+ * being worked on.
+ *
+ * Moving and resizing are gestures on the grid: drag the handle, drag the corner. The arrow keys
+ * do the same things while focus is in the tile, because a dashboard that can only be arranged
+ * with a pointer cannot be arranged by everyone.
  */
 export function EditableWidget({
   title,
@@ -45,6 +49,7 @@ export function EditableWidget({
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
   const actionsRef = useRef(actions)
+  const [isHovered, setIsHovered] = useState(false)
 
   useEffect(() => {
     actionsRef.current = actions
@@ -72,17 +77,28 @@ export function EditableWidget({
     ? `column ${position.x + 1}, row ${position.y + 1}, ${position.w} wide by ${position.h} tall`
     : 'not placed on the grid'
 
+  const showsToolbar = isHovered || isSelected
+
   return (
     <div
       ref={containerRef}
       onFocusCapture={onSelect}
       onPointerDownCapture={onSelect}
+      onPointerEnter={() => setIsHovered(true)}
+      onPointerLeave={() => setIsHovered(false)}
       className={cn(
-        'flex min-h-0 w-full flex-col gap-1 rounded-lg border border-dashed p-1 transition-colors',
-        isSelected ? 'border-accent bg-surface-muted/40' : 'border-border',
+        'relative flex h-full min-h-0 w-full rounded-lg ring-offset-2 transition-shadow',
+        isSelected ? 'ring-accent ring-2' : 'ring-border ring-1',
       )}
     >
-      <div className="flex justify-end">
+      {children}
+
+      <div
+        className={cn(
+          'absolute -top-3 right-2 z-20 transition-opacity',
+          showsToolbar ? 'opacity-100' : 'pointer-events-none opacity-0',
+        )}
+      >
         <WidgetToolbar
           title={title}
           position={describedPosition}
@@ -92,8 +108,6 @@ export function EditableWidget({
           onRemove={actions.onRemove}
         />
       </div>
-
-      <div className="flex min-h-0 flex-1">{children}</div>
     </div>
   )
 }
