@@ -270,6 +270,11 @@ any of them:
 Widget bodies receive data or they are not rendered at all. They cannot render a spinner, a
 zero, an empty string or an error of their own, because they are never called in those states.
 
+A state with no data to show takes over the tile rather than sitting as a strip at the top of an
+empty rectangle: icon, state, the reason in the reader's words, a way to act on it and the
+widget's own configuration, centred in the space the data would have filled. These states are
+the product here, so they are composed like it.
+
 Every tile also carries a **Show configuration** disclosure, including tiles that failed before
 a widget existed: the raw entry is kept from the loader and printed as it was written.
 
@@ -292,8 +297,11 @@ as `widget.render.crashed`, and every other widget on the dashboard carries on.
 - **Chart.** Recharts is lazy loaded behind a skeleton of the same size, so the 380 KB it costs
   only arrives when a chart is actually on screen. A numeric x axis is refused, because plotting
   numbers as categories invents an ordering; a non numeric y is refused, because there is nothing
-  to measure. Grouping by a field produces one line per value, capped at eight, and a chart that
-  would need more says how many it found.
+  to measure. Grouping and measuring are checked separately and can never be confused for each
+  other: the field a chart groups by has to be a category, usually text, while the field it
+  measures has to be a number, and the result says which field it grouped by rather than leaving
+  the renderer to infer it. Grouping produces one line per value, capped at eight, and a chart
+  that would need more says how many it found.
 - **Text.** The body is parsed into tokens and rendered as React elements. There is no HTML path
   anywhere and the grammar has no links or images, so there is nothing for a hostile
   configuration to smuggle a URL or a script through. `dangerouslySetInnerHTML` is banned by lint.

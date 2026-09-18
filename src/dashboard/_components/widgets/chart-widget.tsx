@@ -73,9 +73,11 @@ export function ChartWidgetTile({ dashboardId, dataset, widget, filters }: Props
 }
 
 /**
- * A chart needs an axis it can lay out and a value it can measure. A numeric x is refused
- * because plotting one as a category invents an ordering, and a non numeric y is refused
- * because there is nothing to plot.
+ * A chart needs an axis it can lay out and a value it can measure.
+ *
+ * Grouping and measuring are checked separately and never confused: the field a chart groups
+ * by is meant to be a category, usually text, while the field it measures has to be a number.
+ * Every series in a grouped chart measures the same field, so it is checked once.
  */
 function checkChart(result: DataResult, widget: ChartWidget): string | null {
   if (result.kind !== 'series') return 'the data source answered with the wrong shape for a chart'
@@ -84,8 +86,15 @@ function checkChart(result: DataResult, widget: ChartWidget): string | null {
     return `"${result.x.name}" is a number, and a chart axis needs a category or a date`
   }
 
-  for (const [index, series] of result.series.entries()) {
-    const aggregate = widget.groupBy ? widget.series[0]?.aggregate : widget.series[index]?.aggregate
+  if (result.groupBy !== null && result.groupBy.type === 'number') {
+    return `"${result.groupBy.name}" is a number, and grouping needs a category`
+  }
+
+  const measures = result.groupBy === null ? result.series : result.series.slice(0, 1)
+
+  for (const [index, series] of measures.entries()) {
+    const aggregate =
+      result.groupBy === null ? widget.series[index]?.aggregate : widget.series[0]?.aggregate
 
     if (aggregate !== 'count' && series.field.type !== 'number') {
       return `"${series.field.name}" is ${series.field.type}, and a chart value needs a number`

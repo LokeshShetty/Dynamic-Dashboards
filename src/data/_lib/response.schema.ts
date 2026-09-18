@@ -77,5 +77,6 @@ export const dataResultResponseSchema = z.discriminatedUnion('kind', [
         groupValue: z.string().nullable(),
       }),
     ),
+    groupBy: resolvedFieldSchema.nullable(),
   }),
 ])

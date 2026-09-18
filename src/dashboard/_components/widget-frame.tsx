@@ -11,6 +11,7 @@ import { WidgetBadge } from './widget-badge'
 import { WidgetConfigDisclosure } from './widget-config-disclosure'
 import { WidgetErrorBoundary } from './widget-error-boundary'
 import { WidgetStateNotice } from './widget-state-notice'
+import { WidgetStatePanel } from './widget-state-panel'
 
 type Props<TResult> = {
   title: string
@@ -27,6 +28,9 @@ type Props<TResult> = {
  * The only component that renders widget states. A widget body is handed data or it is not
  * rendered at all, which is what keeps the promise enforceable: there is exactly one place
  * where "showing the truth" and "visibly showing that it cannot" are decided.
+ *
+ * A state that cannot show data takes over the tile and is composed for it, centred, with the
+ * reason and the configuration that caused it. These states are the product, not an accident.
  */
 export function WidgetFrame<TResult>({
   title,
@@ -38,20 +42,20 @@ export function WidgetFrame<TResult>({
   children,
   className,
 }: Props<TResult>) {
-  const retry = { label: 'Retry now', onRetry: onRefresh }
+  const isTakenOver = takesOverTile(state)
 
   return (
     <section
       aria-label={title}
       className={cn(
-        'border-border bg-surface-raised flex h-full w-full min-h-0 flex-col gap-2 overflow-hidden rounded-lg border p-3',
+        'border-border bg-surface-raised flex h-full min-h-0 w-full flex-col gap-2 overflow-hidden rounded-lg border p-3',
         className,
       )}
     >
       <header className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 flex-col gap-1">
           <h3 className="text-fg truncate text-sm font-semibold">{title}</h3>
-          <StateBadge state={state} />
+          {isTakenOver ? null : <HeaderBadge state={state} />}
         </div>
         <Button
           variant="ghost"
@@ -67,30 +71,50 @@ export function WidgetFrame<TResult>({
       <div className="flex min-h-0 flex-1 flex-col gap-2">
         <WidgetErrorBoundary widgetId={widgetId} onRetry={onRefresh}>
           {state.kind === 'invalid' ? (
-            <WidgetStateNotice tone="danger" message={state.reason} issues={state.issues} />
+            <WidgetStatePanel
+              tone="danger"
+              icon={FileWarning}
+              label="Invalid configuration"
+              message={state.reason}
+              issues={state.issues}
+            >
+              <WidgetConfigDisclosure configText={configText} className="w-full max-w-prose" />
+            </WidgetStatePanel>
           ) : null}
 
           {state.kind === 'unresolvable' ? (
-            <WidgetStateNotice tone="warning" message={state.reason} />
+            <WidgetStatePanel
+              tone="warning"
+              icon={Unlink}
+              label="Unresolvable binding"
+              message={state.reason}
+              retry={{ label: 'Check again', onRetry: onRefresh }}
+            >
+              <WidgetConfigDisclosure configText={configText} className="w-full max-w-prose" />
+            </WidgetStatePanel>
           ) : null}
 
           {state.kind === 'error' ? (
-            <WidgetStateNotice
+            <WidgetStatePanel
               tone="danger"
-              message={
+              icon={AlertTriangle}
+              label={
                 state.isRefreshing
-                  ? `${state.reason}. Retrying (${state.attempt}/${state.maxAttempts})`
-                  : state.reason
+                  ? `Retrying (${state.attempt}/${state.maxAttempts})`
+                  : 'Cannot load'
               }
-              retry={retry}
+              message={state.reason}
+              retry={{ label: 'Retry now', onRetry: onRefresh }}
             />
           ) : null}
 
           {state.kind === 'empty' ? (
-            <WidgetStateNotice
+            <WidgetStatePanel
               tone="neutral"
-              message="No rows match the filters in force, so there is nothing to show."
-              retry={retry}
+              icon={Inbox}
+              label="No data"
+              message="No rows match the filters in force, so there is nothing to show here."
+              retry={{ label: 'Check again', onRetry: onRefresh }}
             />
           ) : null}
 
@@ -105,7 +129,7 @@ export function WidgetFrame<TResult>({
                     ? `Stale since ${formatClockTime(state.fetchedAt)}, retrying (${state.attempt}/${state.maxAttempts})`
                     : `Stale since ${formatClockTime(state.fetchedAt)}, refresh failed: ${state.reason}`
                 }
-                retry={retry}
+                retry={{ label: 'Retry now', onRetry: onRefresh }}
               />
               <div className="pointer-events-none opacity-50">{children(state.result)}</div>
             </>
@@ -115,51 +139,33 @@ export function WidgetFrame<TResult>({
         </WidgetErrorBoundary>
       </div>
 
-      <WidgetConfigDisclosure configText={configText} />
+      {isTakenOver ? null : <WidgetConfigDisclosure configText={configText} />}
     </section>
+  )
+}
+
+/** States with no data to show own the whole tile, including where the configuration lives. */
+function takesOverTile<TResult>(state: WidgetState<TResult>) {
+  return (
+    state.kind === 'invalid' ||
+    state.kind === 'unresolvable' ||
+    state.kind === 'error' ||
+    state.kind === 'empty'
   )
 }
 
 function isBusy<TResult>(state: WidgetState<TResult>) {
   if (state.kind === 'loading') return true
-  if (state.kind === 'invalid' || state.kind === 'unresolvable') return true
+  if (state.kind === 'invalid') return true
   return 'isRefreshing' in state && state.isRefreshing
 }
 
-function StateBadge<TResult>({ state }: { state: WidgetState<TResult> }) {
+function HeaderBadge<TResult>({ state }: { state: WidgetState<TResult> }) {
   switch (state.kind) {
-    case 'invalid':
-      return (
-        <WidgetBadge icon={FileWarning} tone="danger">
-          Invalid configuration
-        </WidgetBadge>
-      )
-
-    case 'unresolvable':
-      return (
-        <WidgetBadge icon={Unlink} tone="warning">
-          Unresolvable binding
-        </WidgetBadge>
-      )
-
     case 'loading':
       return (
         <WidgetBadge icon={RefreshCw} tone="neutral">
           {state.attempt > 1 ? `Retrying (${state.attempt}/${state.maxAttempts})` : 'Loading'}
-        </WidgetBadge>
-      )
-
-    case 'empty':
-      return (
-        <WidgetBadge icon={Inbox} tone="neutral">
-          No data
-        </WidgetBadge>
-      )
-
-    case 'error':
-      return (
-        <WidgetBadge icon={AlertTriangle} tone="danger">
-          Cannot load
         </WidgetBadge>
       )
 
@@ -180,5 +186,8 @@ function StateBadge<TResult>({ state }: { state: WidgetState<TResult> }) {
           Up to date
         </WidgetBadge>
       )
+
+    default:
+      return null
   }
 }

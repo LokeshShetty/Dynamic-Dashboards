@@ -97,6 +97,7 @@ export function executeQuery(
           matchedRows: rows.length,
           x: describe(xField.data),
           series,
+          groupBy: null,
         })
       }
 
@@ -388,5 +389,12 @@ function groupedSeries(
     }))
     .sort((left, right) => left.x.localeCompare(right.x))
 
-  return ok({ kind: 'series', points, matchedRows: rows.length, x: describe(xField), series })
+  return ok({
+    kind: 'series',
+    points,
+    matchedRows: rows.length,
+    x: describe(xField),
+    series,
+    groupBy: describe(groupField.data),
+  })
 }

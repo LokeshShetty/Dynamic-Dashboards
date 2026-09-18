@@ -26,6 +26,7 @@ export function corruptDataResult(result: DataResult): unknown {
         matchedRows: result.matchedRows,
         x: result.x,
         series: result.series,
+        groupBy: result.groupBy,
       }
   }
 }

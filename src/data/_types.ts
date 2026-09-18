@@ -68,6 +68,8 @@ export type DataResult =
       matchedRows: number
       x: ResolvedField
       series: SeriesDescriptor[]
+      /** The field the series were split by, when the chart groups. */
+      groupBy: ResolvedField | null
     }
 
 /**
