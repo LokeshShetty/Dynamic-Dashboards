@@ -1,3 +1,5 @@
+import { isRecord } from '@/lib/guards'
+
 import { slotToWidgetState } from '../_lib/widget-state'
 import type { WidgetFilterContext, WidgetSlot } from '../_types'
 import { WidgetFrame } from './widget-frame'
@@ -22,7 +24,7 @@ export function WidgetRenderer({ dashboardId, dataset, slot, rawEntry, filters }
   if (invalidState) {
     return (
       <WidgetFrame
-        title={titleForBrokenSlot(slot)}
+        title={titleForBrokenSlot(slot, rawEntry)}
         widgetId={`slot-${slot.index}`}
         state={invalidState}
         skeleton={null}
@@ -36,12 +38,14 @@ export function WidgetRenderer({ dashboardId, dataset, slot, rawEntry, filters }
 
   if (slot.kind !== 'valid') return null
 
+  const widgetDataset = slot.widget.dataset ?? dataset
+
   switch (slot.widget.kind) {
     case 'metric':
       return (
         <MetricWidgetTile
           dashboardId={dashboardId}
-          dataset={dataset}
+          dataset={widgetDataset}
           widget={slot.widget}
           filters={filters}
         />
@@ -51,7 +55,7 @@ export function WidgetRenderer({ dashboardId, dataset, slot, rawEntry, filters }
       return (
         <TableWidgetTile
           dashboardId={dashboardId}
-          dataset={dataset}
+          dataset={widgetDataset}
           widget={slot.widget}
           filters={filters}
         />
@@ -61,7 +65,7 @@ export function WidgetRenderer({ dashboardId, dataset, slot, rawEntry, filters }
       return (
         <ChartWidgetTile
           dashboardId={dashboardId}
-          dataset={dataset}
+          dataset={widgetDataset}
           widget={slot.widget}
           filters={filters}
         />
@@ -72,7 +76,12 @@ export function WidgetRenderer({ dashboardId, dataset, slot, rawEntry, filters }
   }
 }
 
-function titleForBrokenSlot(slot: WidgetSlot) {
+/** A broken widget still has a name its author would recognise: its title, then its id. */
+function titleForBrokenSlot(slot: WidgetSlot, rawEntry: unknown) {
+  if (isRecord(rawEntry) && typeof rawEntry.title === 'string' && rawEntry.title !== '') {
+    return rawEntry.title
+  }
+
   if (slot.kind === 'invalid') return slot.id ?? `Widget ${slot.index + 1}`
   if (slot.kind === 'valid') return slot.widget.title
   return slot.id

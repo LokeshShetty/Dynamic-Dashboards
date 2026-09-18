@@ -25,7 +25,7 @@ Three failure modes the promise rules out:
 | 3. Data layer, chaos controls, fetch hook | Done        |
 | 4. Rendering and the four widget types    | Done        |
 | 5. Dashboard filters                      | Done        |
-| 6. Widget editor                          | Not started |
+| 6. Widget editor                          | Done        |
 | 7. Persistence, revisions, conflicts      | Not started |
 | 8. Hostile configuration corpus           | Not started |
 | 9. Documentation and self-review          | Not started |
@@ -400,6 +400,67 @@ widget on the dashboard, turning a filter problem into a blank page. The badge i
 weaker option honest: it is on the tile, in the header, in words, and it says the data is
 unfiltered.
 
+## The editor
+
+Editing is a parameter on the dashboard, `?edit=1`, not a separate screen. The same tiles, the
+same filters, the same frame: what is being arranged is the real dashboard in its real state.
+
+### The draft
+
+Entering edit mode copies the loaded configuration into a draft in the store. Every change lands
+there and nowhere else, and the draft is previewed by running it through **the same loader the
+reader gets**: serialise, guard, migrate, validate the shell, validate each widget. So a widget
+that is half configured shows precisely the tile it would show if it were saved that way, down to
+the wording.
+
+The header says whether there are unsaved changes. Discarding asks first, and leaving edit mode
+with a dirty draft asks too, because until persistence lands there is nowhere for the draft to go.
+Save is present and visibly disabled with a tooltip saying what it is waiting for: a dashboard
+editor with no save button reads as broken.
+
+### Adding and arranging
+
+The catalogue offers the four widget types. A new widget takes the first free slot on the grid at
+a default size for its type, and the editor opens on it immediately: bindings are left empty
+rather than guessed, so until a field is chosen the tile says it is not configured yet.
+
+Each tile carries a toolbar: move handle, rename, edit, duplicate, move, resize, remove. Every
+control is an icon button with a name that says which widget it acts on. Remove goes through the
+confirm dialog. The same moves work from the keyboard while focus is anywhere in the tile: arrows
+move, shift and arrows resize, and the move handle is the focus target that announces both the
+current position and how to change it.
+
+**Every layout change is checked before it is applied**, against the same rules the loader
+validates against: inside the grid, within the row limit, and not on top of another tile. A
+refused change is not applied and says why, naming the widget in the way: _Move refused, that
+would sit on top of "Claims"_. The editor cannot produce a layout that the loader would then
+report as invalid.
+
+### The form
+
+One dialog, `react-hook-form` with a zod resolver over **the widget schemas the loader uses**.
+There is no second definition of what a valid widget is, so nothing can be accepted here that the
+reader's loader would reject.
+
+The dataset comes first, because everything below it depends on it: a widget may read the
+dashboard's dataset or another one. Fields are then offered from the live dataset schema through
+the same client as everything else, so the form is slow when the source is slow, and when the
+schema cannot be fetched at all the field name can still be typed rather than blocking the edit.
+Aggregates are filtered to the ones that mean something over the chosen field's type, and
+presentation options follow the widget type.
+
+A widget bound to a field that no longer exists **keeps its value**, shown in the picker marked
+_not in dataset_, with a note saying so. Clearing it silently would lose what the author asked
+for, and would make a broken widget look like an unfinished one.
+
+Every keystroke reaches the draft, so the tile behind the dialog re-renders as the form is filled
+in. Binding a currency formatted metric to a field with no money unit, or a sum to a text field,
+says so on the tile before anything is saved.
+
+Chaos keeps running throughout. Editing while the data layer is failing is the normal case, not a
+special one: the form degrades to typed field names, and the tiles behind it show their own
+failure states.
+
 ## UI primitives
 
 There is no component library in this project. Every control is a native element styled with
@@ -502,6 +563,20 @@ dismiss button.
 | No component library, native elements first               | A `<select>`, a `<details>` and a `<fieldset>` already carry the keyboard and screen reader behaviour a library would re-implement, and they cost nothing to ship.               |
 | Modal and toasts hand written rather than Radix or sonner | The two things actually needed are a dialog and a live region. `<dialog>` supplies the hard half of the first, and the second is twenty lines, so three dependencies buy little. |
 | The chip group is a fieldset, not a labelled div          | A `<label for>` pointing at a div names nothing. A fieldset with a legend gives the group a real accessible name, which is what a screen reader reads before the chips.          |
+
+### Phase 6: the editor
+
+| Decision                                                       | Why                                                                                                                                                                                      |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The draft is previewed through the loader, not a separate path | Any second rendering path for drafts would eventually disagree with the first, and the disagreement would show up as a widget that looked fine in the editor and broke on save.          |
+| Layout changes are checked before they are applied             | The editor and the loader share one set of rules, so the editor cannot create a tile that the loader will call invalid. A refusal names the widget in the way.                           |
+| Editor actions are addressed by position, not by widget id     | An entry broken enough to have no usable id still has to be editable and removable, and by id it would be unreachable.                                                                   |
+| The form uses the loader's own schemas                         | One definition of a valid widget. A form schema that drifted from the loader's would let the editor save something the reader cannot open.                                               |
+| A new widget starts with no binding and opens its editor       | Guessing a field would be a binding nobody asked for. An empty binding is honestly invalid, and the tile says so while it is being filled in.                                            |
+| A binding to a field that is gone is kept and marked           | Clearing it loses what the author asked for and makes a broken widget look unfinished. Marked, it can be corrected or deliberately kept.                                                 |
+| Every keystroke reaches the draft                              | The point of editing in place is to see the real state, including the ones that say the widget cannot render, before committing to it.                                                   |
+| Save is shown disabled rather than hidden                      | A missing save button reads as a bug. A disabled one with a tooltip reads as a sequence.                                                                                                 |
+| Widgets may override the dashboard dataset                     | The form asks for a dataset first, and a dashboard that can only ever read one source makes that question meaningless. The override is optional, so older configurations are unaffected. |
 
 ## Open questions
 

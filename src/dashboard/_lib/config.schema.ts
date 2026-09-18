@@ -75,17 +75,19 @@ const widgetBaseShape = {
   id: idSchema,
   title: titleSchema,
   layout: layoutSchema,
+  /** Optional: a widget may read from another dataset than the dashboard's own. */
+  dataset: idSchema.optional(),
   ignoredFilterIds: z.array(idSchema).max(CONFIG_LIMITS.MAX_FILTERS).optional(),
 }
 
-const metricWidgetSchema = z.strictObject({
+export const metricWidgetSchema = z.strictObject({
   ...widgetBaseShape,
   kind: z.literal('metric'),
   value: z.strictObject({ field: fieldNameSchema, aggregate: z.enum(AGGREGATES) }),
   format: numberFormatSchema.optional(),
 })
 
-const tableWidgetSchema = z.strictObject({
+export const tableWidgetSchema = z.strictObject({
   ...widgetBaseShape,
   kind: z.literal('table'),
   columns: z
@@ -103,7 +105,7 @@ const tableWidgetSchema = z.strictObject({
   sort: z.strictObject({ field: fieldNameSchema, direction: z.enum(SORT_DIRECTIONS) }).optional(),
 })
 
-const chartWidgetSchema = z
+export const chartWidgetSchema = z
   .strictObject({
     ...widgetBaseShape,
     kind: z.literal('chart'),
@@ -129,7 +131,7 @@ const chartWidgetSchema = z
     path: ['series'],
   })
 
-const textWidgetSchema = z.strictObject({
+export const textWidgetSchema = z.strictObject({
   ...widgetBaseShape,
   kind: z.literal('text'),
   body: z.string().min(1).max(CONFIG_LIMITS.MAX_TEXT_BODY_CHARS),

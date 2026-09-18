@@ -1,3 +1,5 @@
+import { isRecord } from '@/lib/guards'
+
 import { CONFIG_LIMITS } from '../_constants'
 import type { WidgetSlot } from '../_types'
 import type { WidgetLayout } from './config.schema'
@@ -40,4 +42,99 @@ function cellsOf(layout: WidgetLayout): string[] {
   }
 
   return cells
+}
+
+export type Rect = { x: number; y: number; w: number; h: number }
+
+export type Placement = { id: string; rect: Rect }
+
+export type PlacementRefusal =
+  { kind: 'out-of-bounds'; message: string } | { kind: 'overlap'; withId: string }
+
+/**
+ * The editor checks a placement against the same rules the loader validates against, so it
+ * cannot produce a layout that would come back as an invalid tile. Anything the loader would
+ * reject is refused here, with a reason short enough to put in a notice.
+ */
+export function checkPlacement(
+  placements: ReadonlyArray<Placement>,
+  id: string,
+  rect: Rect,
+  columns: number,
+): PlacementRefusal | null {
+  if (rect.w < 1 || rect.h < 1) {
+    return { kind: 'out-of-bounds', message: 'a widget cannot be smaller than one cell' }
+  }
+
+  if (rect.h > CONFIG_LIMITS.MAX_ROW_SPAN) {
+    return {
+      kind: 'out-of-bounds',
+      message: `a widget cannot be taller than ${CONFIG_LIMITS.MAX_ROW_SPAN} rows`,
+    }
+  }
+
+  if (rect.x < 0 || rect.y < 0) {
+    return { kind: 'out-of-bounds', message: 'that would leave the top left of the grid' }
+  }
+
+  if (rect.x + rect.w > columns) {
+    return { kind: 'out-of-bounds', message: `that would pass column ${columns}` }
+  }
+
+  if (rect.y + rect.h > CONFIG_LIMITS.MAX_GRID_ROWS) {
+    return { kind: 'out-of-bounds', message: 'that would leave the bottom of the grid' }
+  }
+
+  const clash = placements.find(
+    (placement) => placement.id !== id && overlaps(placement.rect, rect),
+  )
+
+  return clash ? { kind: 'overlap', withId: clash.id } : null
+}
+
+/** Top to bottom, left to right: the first place the new widget fits. */
+export function findFreeSlot(
+  placements: ReadonlyArray<Placement>,
+  size: { w: number; h: number },
+  columns: number,
+): Rect | null {
+  for (let y = 0; y + size.h <= CONFIG_LIMITS.MAX_GRID_ROWS; y += 1) {
+    for (let x = 0; x + size.w <= columns; x += 1) {
+      const rect = { x, y, w: size.w, h: size.h }
+      if (!placements.some((placement) => overlaps(placement.rect, rect))) return rect
+    }
+  }
+
+  return null
+}
+
+function overlaps(left: Rect, right: Rect) {
+  return (
+    left.x < right.x + right.w &&
+    right.x < left.x + left.w &&
+    left.y < right.y + right.h &&
+    right.y < left.y + left.h
+  )
+}
+
+/** Reads the placements out of draft entries, which may not all be valid widgets yet. */
+export function placementsOf(entries: ReadonlyArray<unknown>): Placement[] {
+  return entries.flatMap((entry) => {
+    if (!isRecord(entry) || typeof entry.id !== 'string') return []
+
+    const layout = entry.layout
+    if (!isRecord(layout)) return []
+
+    const { x, y, w, h } = layout
+    if (
+      typeof x !== 'number' ||
+      typeof y !== 'number' ||
+      typeof w !== 'number' ||
+      typeof h !== 'number'
+    ) {
+      return []
+    }
+
+    return [{ id: entry.id, rect: { x, y, w, h } }]
+  })
 }

@@ -25,6 +25,12 @@
       {
         "allow": ["__chaos"]
       }
+    ],
+    "react/no-unstable-nested-components": [
+      "error",
+      {
+        "allowAsProps": true
+      }
     ]
   },
   "ignorePatterns": ["dist", "node_modules", "coverage"]

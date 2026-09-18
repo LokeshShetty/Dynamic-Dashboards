@@ -1,17 +1,19 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 
 import { useQueryClient } from '@tanstack/react-query'
-import { Database, History, RefreshCw } from 'lucide-react'
+import { Database, History, Pencil, RefreshCw } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { useAppStore } from '@/lib/store'
 
+import { useEditMode } from '../_hooks/use-edit-mode'
 import { useFilterValues } from '../_hooks/use-filter-values'
 import type { DashboardShell } from '../_lib/config.schema'
 import { toDataFilters } from '../_lib/to-data-query'
 import type { WidgetSlot } from '../_types'
+import { DashboardGrid } from './dashboard-grid'
+import { EditorGrid } from './editor/editor-grid'
 import { FilterBar } from './filters/filter-bar'
-import { WidgetGrid, WidgetGridItem } from './widget-grid'
-import { WidgetRenderer } from './widget-renderer'
 
 type Props = {
   shell: DashboardShell
@@ -22,6 +24,16 @@ type Props = {
 export function LoadedDashboard({ shell, slots, migratedFrom }: Props) {
   const queryClient = useQueryClient()
   const { values, activeCount, ignored, setValue, reset } = useFilterValues(shell.filters)
+  const { isEditing, enterEditMode, leaveEditMode } = useEditMode()
+  const startDraft = useAppStore((state) => state.startDraft)
+  const discardDraft = useAppStore((state) => state.discardDraft)
+
+  // The draft is taken from the loaded configuration when editing starts, and thrown away when
+  // it ends. Nothing in edit mode touches what the reader sees until a save exists.
+  useEffect(() => {
+    if (isEditing) startDraft(shell.id, shell)
+    else discardDraft()
+  }, [discardDraft, isEditing, shell, startDraft])
 
   const filterContext = useMemo(
     () => ({
@@ -58,10 +70,18 @@ export function LoadedDashboard({ shell, slots, migratedFrom }: Props) {
           </p>
         </div>
 
-        <Button onClick={refreshAll}>
-          <RefreshCw aria-hidden="true" className="size-4" />
-          Refresh all
-        </Button>
+        <div className="flex items-center gap-2">
+          {isEditing ? null : (
+            <Button onClick={enterEditMode}>
+              <Pencil aria-hidden="true" className="size-4" />
+              Edit dashboard
+            </Button>
+          )}
+          <Button onClick={refreshAll}>
+            <RefreshCw aria-hidden="true" className="size-4" />
+            Refresh all
+          </Button>
+        </div>
       </header>
 
       <FilterBar
@@ -74,22 +94,11 @@ export function LoadedDashboard({ shell, slots, migratedFrom }: Props) {
         onReset={reset}
       />
 
-      <WidgetGrid columns={shell.layout.columns}>
-        {slots.map((slot) => (
-          <WidgetGridItem
-            key={`${slot.index}-${slot.kind === 'invalid' ? (slot.id ?? 'unnamed') : slot.id}`}
-            layout={slot.kind === 'valid' ? slot.widget.layout : null}
-          >
-            <WidgetRenderer
-              dashboardId={shell.id}
-              dataset={shell.dataset}
-              slot={slot}
-              rawEntry={shell.widgets[slot.index]}
-              filters={filterContext}
-            />
-          </WidgetGridItem>
-        ))}
-      </WidgetGrid>
+      {isEditing ? (
+        <EditorGrid filters={filterContext} onLeave={leaveEditMode} />
+      ) : (
+        <DashboardGrid shell={shell} slots={slots} filters={filterContext} />
+      )}
     </div>
   )
 }
