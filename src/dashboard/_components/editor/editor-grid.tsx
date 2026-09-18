@@ -3,6 +3,10 @@ import { useMemo, useState } from 'react'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { isRecord } from '@/lib/guards'
 import { useAppStore } from '@/lib/store'
+import { SaveConflictDialog } from '@/storage/_components/save-conflict-dialog'
+import { useDashboardRecord } from '@/storage/_hooks/use-dashboard-record'
+import { useSaveDashboard } from '@/storage/_hooks/use-save-dashboard'
+import type { DashboardRecord } from '@/storage/_types'
 
 import { useEditor } from '../../_hooks/use-editor'
 import { loadDashboardConfig } from '../../_lib/load-config'
@@ -22,8 +26,10 @@ type EditorDialog =
   | { kind: 'leave' }
 
 type Props = {
+  dashboardId: string
   filters: WidgetFilterContext
   onLeave: () => void
+  onReloadSaved: () => void
 }
 
 /**
@@ -31,11 +37,16 @@ type Props = {
  * The draft is previewed through the same loader the reader gets, so a widget that is mid-edit
  * and not valid yet shows exactly the tile it would show if it were saved that way.
  */
-export function EditorGrid({ filters, onLeave }: Props) {
+export function EditorGrid({ dashboardId, filters, onLeave, onReloadSaved }: Props) {
   const editor = useEditor()
   const resetDraft = useAppStore((state) => state.resetDraft)
   const discardDraft = useAppStore((state) => state.discardDraft)
   const [dialog, setDialog] = useState<EditorDialog | null>(null)
+  const [conflict, setConflict] = useState<DashboardRecord | null>(null)
+
+  const { state: recordState } = useDashboardRecord(dashboardId)
+  const save = useSaveDashboard(dashboardId)
+  const savedVersion = recordState.kind === 'ok' ? recordState.record.version : null
 
   const shell = editor.shell
   const preview = useMemo(
@@ -71,10 +82,30 @@ export function EditorGrid({ filters, onLeave }: Props) {
     onLeave()
   }
 
+  /**
+   * The draft is saved as the text it would be stored as, carrying the version it started from.
+   * Storage refuses the write if that version moved, and the refusal opens the conflict view.
+   */
+  const saveDraft = (expectedVersion: number) => {
+    if (!shell) return
+
+    save.mutate(
+      { id: dashboardId, config: JSON.stringify(shell, null, 2), expectedVersion },
+      {
+        onSuccess: (outcome) => {
+          setConflict(outcome.kind === 'conflict' ? outcome.current : null)
+        },
+      },
+    )
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <EditorBar
         isDirty={editor.isDirty}
+        savedVersion={savedVersion}
+        isSaving={save.isPending}
+        onSave={() => (savedVersion === null ? undefined : saveDraft(savedVersion))}
         onAdd={(kind) => {
           const index = editor.addWidget(kind)
           if (index !== null) setDialog({ kind: 'edit', index })
@@ -149,6 +180,22 @@ export function EditorGrid({ filters, onLeave }: Props) {
         }}
         onCancel={() => setDialog(null)}
       />
+
+      {conflict === null || savedVersion === null ? null : (
+        <SaveConflictDialog
+          current={conflict}
+          mine={JSON.stringify(shell, null, 2)}
+          expectedVersion={savedVersion}
+          isSaving={save.isPending}
+          onKeepEditing={() => setConflict(null)}
+          onReloadTheirs={() => {
+            setConflict(null)
+            discardDraft()
+            onReloadSaved()
+          }}
+          onOverwrite={() => saveDraft(conflict.version)}
+        />
+      )}
 
       <ConfirmDialog
         open={dialog?.kind === 'leave'}

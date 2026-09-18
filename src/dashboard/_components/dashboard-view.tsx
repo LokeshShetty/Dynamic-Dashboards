@@ -3,10 +3,13 @@ import { DashboardErrorScreen } from './dashboard-error-screen'
 import { LoadedDashboard } from './loaded-dashboard'
 import { UnsupportedVersionScreen } from './unsupported-version-screen'
 
-type Props = { load: DashboardLoad }
+type Props = {
+  load: DashboardLoad
+  saved: { version: number; savedAt: string; config: string; revisionCount: number }
+}
 
 /** Every way a configuration can arrive, and the screen that owes the reader an explanation. */
-export function DashboardView({ load }: Props) {
+export function DashboardView({ load, saved }: Props) {
   switch (load.kind) {
     case 'invalid':
       return (
@@ -29,7 +32,12 @@ export function DashboardView({ load }: Props) {
 
     case 'loaded':
       return (
-        <LoadedDashboard shell={load.shell} slots={load.slots} migratedFrom={load.migratedFrom} />
+        <LoadedDashboard
+          shell={load.shell}
+          slots={load.slots}
+          migratedFrom={load.migratedFrom}
+          saved={saved}
+        />
       )
   }
 }

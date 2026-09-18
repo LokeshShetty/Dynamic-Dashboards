@@ -7,16 +7,28 @@ import { AddWidgetMenu } from './add-widget-menu'
 
 type Props = {
   isDirty: boolean
+  savedVersion: number | null
+  isSaving: boolean
+  onSave: () => void
   onAdd: (kind: WidgetKind) => void
   onDiscard: () => void
   onDone: () => void
 }
 
 /**
- * Save is here and visibly disabled rather than hidden, because a dashboard editor without a
- * save button reads as broken. The tooltip says what it is waiting for.
+ * Saving follows the same contract as every other action that waits on something: it shows that
+ * it is working, it cannot be pressed twice, and it says what happened either way. A save that
+ * fails leaves the draft dirty and the changes untouched.
  */
-export function EditorBar({ isDirty, onAdd, onDiscard, onDone }: Props) {
+export function EditorBar({
+  isDirty,
+  savedVersion,
+  isSaving,
+  onSave,
+  onAdd,
+  onDiscard,
+  onDone,
+}: Props) {
   return (
     <section
       aria-label="Editing"
@@ -31,17 +43,22 @@ export function EditorBar({ isDirty, onAdd, onDiscard, onDone }: Props) {
 
       <div className="ml-auto flex flex-wrap items-center gap-2">
         <span className={isDirty ? 'text-warning text-xs' : 'text-fg-subtle text-xs'}>
-          {isDirty ? 'Unsaved changes' : 'No changes yet'}
+          {isDirty ? 'Unsaved changes' : `Saved as version ${savedVersion ?? '?'}`}
         </span>
 
         <Button
           size="sm"
           variant="solid"
-          disabled
-          title="Saving arrives with persistence in the next phase"
+          onClick={onSave}
+          disabled={isSaving || !isDirty || savedVersion === null}
+          title={
+            savedVersion === null
+              ? 'Waiting for the stored version this edit started from'
+              : undefined
+          }
         >
           <Save aria-hidden="true" className="size-3" />
-          Save
+          {isSaving ? 'Saving…' : 'Save'}
         </Button>
 
         <Button size="sm" onClick={onDiscard} disabled={!isDirty}>

@@ -1,11 +1,9 @@
-import { AbortedError, createTimeoutSignal, delay, neverSettle } from '@/lib/abort'
 import { log } from '@/lib/log'
-import { useAppStore } from '@/lib/store'
 import type { ChaosSnapshot } from '@/types/chaos'
 import type { DatasetSchema } from '@/types/data'
 
-import { DISTINCT_VALUE_LIMIT, REQUEST_TIMEOUT_MS } from '../_constants'
-import type { DataError, DataQuery, DataResult, DistinctValues } from '../_types'
+import { DISTINCT_VALUE_LIMIT } from '../_constants'
+import type { DataQuery, DataResult, DistinctValues } from '../_types'
 import { corruptDataResult, corruptDatasetSchema } from './corrupt'
 import { DataRequestError } from './data-error'
 import { readEffectiveDataset } from './effective-dataset'
@@ -15,6 +13,12 @@ import {
   datasetSchemaResponseSchema,
   distinctValuesResponseSchema,
 } from './response.schema'
+import {
+  readChaos,
+  withTransport as runTransport,
+  takeCorruption,
+  type RequestOptions,
+} from './transport'
 import { worldDatasetIds } from './world'
 
 /**
@@ -22,7 +26,7 @@ import { worldDatasetIds } from './world'
  * request honours its AbortSignal, because the guarantee that an abandoned request cannot
  * land on screen is only worth as much as the cancellation underneath it.
  */
-export type RequestOptions = { signal?: AbortSignal }
+export type { RequestOptions }
 
 export async function fetchDatasetIds(options: RequestOptions = {}): Promise<string[]> {
   const chaos = readChaos()
@@ -94,14 +98,6 @@ export async function fetchDistinctValues(
   })
 }
 
-function readChaos(): ChaosSnapshot {
-  return useAppStore.getState()
-}
-
-function takeCorruption() {
-  return useAppStore.getState().takeCorruption()
-}
-
 function validate<T>(parsed: { success: true; data: T } | { success: false; error: unknown }): T {
   if (parsed.success) return parsed.data
 
@@ -111,58 +107,30 @@ function validate<T>(parsed: { success: true; data: T } | { success: false; erro
   throw new DataRequestError({ kind: 'corrupt-response', message })
 }
 
-/**
- * Everything every request shares: the wait, the dice, the timeout and the cancellation.
- * The work itself is a synchronous function, so the transport story stays in one place.
- */
+/** The dataset client's own wrapper: shared transport, with data layer errors on top. */
 async function withTransport<T>(
   options: RequestOptions,
   chaos: ChaosSnapshot,
   event: string,
   work: () => T,
 ): Promise<T> {
-  const timeout = createTimeoutSignal(options.signal, REQUEST_TIMEOUT_MS)
-
   try {
-    // A request that never answers. The timeout, not a race, is what ends it.
-    if (Math.random() < chaos.timeoutRate) {
-      await neverSettle(timeout.signal)
-    }
-
-    await delay(chaos.latencyMs + Math.random() * chaos.jitterMs, timeout.signal)
-
-    if (Math.random() < chaos.failureRate) {
-      throw new DataRequestError({
-        kind: 'request-failed',
-        message: 'the data source refused the request',
-      })
-    }
-
-    return work()
+    return await runTransport(
+      options,
+      chaos,
+      event,
+      work,
+      (failure) => new DataRequestError(failure),
+    )
   } catch (error) {
-    throw toThrownError(error, event, timeout.timedOut())
-  } finally {
-    timeout.dispose()
+    if (error instanceof DataRequestError) {
+      if (error.detail.kind !== 'aborted') log.warn(`${event}.failed`, { kind: error.detail.kind })
+      throw error
+    }
+
+    throw new DataRequestError({
+      kind: 'request-failed',
+      message: error instanceof Error ? error.message : 'the request failed',
+    })
   }
-}
-
-function toThrownError(error: unknown, event: string, timedOut: boolean): DataRequestError {
-  if (error instanceof AbortedError) {
-    const detail: DataError = timedOut
-      ? { kind: 'timeout', timeoutMs: REQUEST_TIMEOUT_MS }
-      : { kind: 'aborted' }
-
-    if (timedOut) log.warn(`${event}.timeout`, { timeoutMs: REQUEST_TIMEOUT_MS })
-    return new DataRequestError(detail)
-  }
-
-  if (error instanceof DataRequestError) {
-    log.warn(`${event}.failed`, { kind: error.detail.kind })
-    return error
-  }
-
-  return new DataRequestError({
-    kind: 'request-failed',
-    message: error instanceof Error ? error.message : 'the request failed',
-  })
 }

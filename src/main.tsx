@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 
 import { App } from '@/app/app'
 import { bootstrapChaos } from '@/chaos/_lib/bootstrap-chaos'
+import { ensureSeeded } from '@/storage/_lib/dashboard-store'
 
 import '@/styles/global.css'
 
@@ -13,6 +14,7 @@ if (!rootElement) {
 }
 
 bootstrapChaos(window)
+ensureSeeded()
 
 createRoot(rootElement).render(
   <StrictMode>

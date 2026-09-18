@@ -1,10 +1,13 @@
 import { useState } from 'react'
 
-import { FlaskConical, RotateCcw, X } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
+import { DatabaseBackup, FlaskConical, RotateCcw, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/lib/store'
 import { cn } from '@/lib/utils'
+import { dashboardStore } from '@/storage/_lib/dashboard-store'
+import { describeStorageFailure, toStorageFailure } from '@/storage/_lib/storage-error'
 
 import { CHAOS_LIMITS } from '../_constants'
 import { ChaosSlider } from './chaos-slider'
@@ -29,6 +32,33 @@ export function ChaosPanel({ className }: { className?: string }) {
   const setSettings = useAppStore((state) => state.setSettings)
   const restoreWorld = useAppStore((state) => state.restoreWorld)
   const reset = useAppStore((state) => state.reset)
+  const pushToast = useAppStore((state) => state.pushToast)
+  const discardDraft = useAppStore((state) => state.discardDraft)
+  const queryClient = useQueryClient()
+  const [isReseeding, setIsReseeding] = useState(false)
+
+  const resetToSeed = async () => {
+    setIsReseeding(true)
+
+    try {
+      await dashboardStore.resetToSeed()
+      discardDraft()
+      await queryClient.invalidateQueries({ queryKey: ['dashboard'] })
+      pushToast({
+        tone: 'success',
+        title: 'Dashboards reset',
+        description: 'The shipped demo and the two legacy configurations are back.',
+      })
+    } catch (error) {
+      pushToast({
+        tone: 'error',
+        title: 'Reset failed',
+        description: describeStorageFailure(toStorageFailure(error)),
+      })
+    } finally {
+      setIsReseeding(false)
+    }
+  }
 
   if (!isOpen) {
     return (
@@ -117,6 +147,11 @@ export function ChaosPanel({ className }: { className?: string }) {
         </Button>
 
         <ChaosWorldControls />
+
+        <Button size="sm" disabled={isReseeding} onClick={() => void resetToSeed()}>
+          <DatabaseBackup aria-hidden="true" className="size-3" />
+          {isReseeding ? 'Resetting stored dashboards…' : 'Reset stored dashboards to seed'}
+        </Button>
 
         <div className="flex items-center justify-between gap-2">
           <span className="text-fg-subtle font-mono text-xs">epoch {epoch}</span>

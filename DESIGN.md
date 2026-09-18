@@ -26,7 +26,7 @@ Three failure modes the promise rules out:
 | 4. Rendering and the four widget types    | Done        |
 | 5. Dashboard filters                      | Done        |
 | 6. Widget editor                          | Done        |
-| 7. Persistence, revisions, conflicts      | Not started |
+| 7. Persistence, revisions, conflicts      | Done        |
 | 8. Hostile configuration corpus           | Not started |
 | 9. Documentation and self-review          | Not started |
 
@@ -461,6 +461,89 @@ Chaos keeps running throughout. Editing while the data layer is failing is the n
 special one: the form degrades to typed field names, and the tiles behind it show their own
 failure states.
 
+## Persistence, revisions and conflicts
+
+### What is stored, and how it is read
+
+Saved state lives in localStorage, one record per dashboard, holding the configuration **as
+text** plus a version counter and a capped list of revisions. It is read back through exactly the
+same loader as a pasted configuration, because that is what it is: text written by an earlier
+build, or by someone with devtools open. A record that does not parse, or does not match the
+stored record schema, produces _stored config is corrupt: reason_ with a way forward, never a
+blank page.
+
+Every call goes through the same transport as the data layer: slow by default, sometimes refused,
+sometimes timed out, always cancellable. A save that is always instant would hide the states this
+system exists to handle. Chaos applies to storage too, including corrupting a read so the loader
+meets damage the way a reader would.
+
+`localStorage` is also checked for being real rather than assumed: private modes, sandboxed
+frames and webviews hand back something that looks like storage and is not, and that arrives as
+_this browser will not let the dashboard store anything_ rather than as a crash deeper in.
+
+### Compare and swap, never last write wins
+
+A save carries the version the edit started from. Storage compares it with what is stored and
+refuses the write if it has moved on. The refusal is an **outcome, not an error**: it opens a
+conflict view listing what differs per widget, as _only in the saved version_, _only in your
+draft_ or _different in both_, plus whether dashboard settings differ.
+
+Three ways out, all chosen by the reader:
+
+| Choice        | What happens                                                                       |
+| ------------- | ---------------------------------------------------------------------------------- |
+| Keep editing  | Nothing is written. The draft stays exactly as it was                              |
+| Reload theirs | The draft is dropped and the stored version is loaded                              |
+| Overwrite     | Through a confirmation, saves on top of their version. Theirs stays in the history |
+
+Last write wins was rejected outright. It is the same failure as a stale widget: work that looks
+saved and is gone. A failed save, for any reason, leaves the draft dirty and untouched, and says
+so in a toast.
+
+### What concurrent means here, and what it does not
+
+Two tabs are two users. A save is announced over `BroadcastChannel`, with the `storage` event as a
+fallback where that is missing, and both kinds of message are validated with zod, because another
+tab is not more trustworthy than a URL.
+
+A tab that hears about a save shows it: _someone saved version 9_. If nothing is being edited
+here, reloading is one click. If there is a draft, the offer is to compare rather than to reload,
+and **nothing ever reloads itself over unsaved work**.
+
+What this is not:
+
+- Not live collaboration. There is no shared cursor, no presence, no streaming of edits.
+- Not a CRDT or any other automatic merge. Conflicts are shown and resolved by a person, because
+  merging two dashboard layouts without asking is how both people lose their arrangement.
+- Not sharing between machines. localStorage is per browser, per origin. **Real sharing needs a
+  backend**, and the store interface is written for that: six asynchronous methods, each taking an
+  `AbortSignal`, with a failure vocabulary that already includes the things a network adds. A REST
+  implementation replaces `src/storage/_lib/dashboard-store.ts` and nothing above it changes.
+
+### Revisions
+
+Every save appends `{ version, savedAt, config }`. `?rev=4` opens that revision read only, with a
+banner saying which of how many it is. Restoring is a **new save** through a confirmation, so the
+history is only ever appended to and never rewritten.
+
+History is capped at 30 revisions per dashboard, oldest pruned, because localStorage is a few
+megabytes for the whole origin and an uncapped history is a quota failure waiting to happen. The
+cap is stated in the header (_n revisions kept_) rather than left to be discovered. A quota
+failure that does happen surfaces as a failed save naming the quota.
+
+### Getting configurations in and out
+
+Export downloads exactly what is stored. Import treats the file as hostile input: it goes through
+the loader like anything else, and a file that opens lands as a **dirty draft** to be reviewed and
+saved through the normal compare and swap path. A file from somewhere else can never overwrite a
+dashboard without a person looking at it first.
+
+### Starting from nothing
+
+An unknown id is a dead end with a way forward: _no dashboard with id X_, and a button that
+creates an empty one. On a first visit the three shipped configurations are seeded, two of them
+deliberately in older formats, and the chaos panel can reset storage back to them.
+
 ## UI primitives
 
 There is no component library in this project. Every control is a native element styled with
@@ -577,6 +660,21 @@ dismiss button.
 | Every keystroke reaches the draft                              | The point of editing in place is to see the real state, including the ones that say the widget cannot render, before committing to it.                                                   |
 | Save is shown disabled rather than hidden                      | A missing save button reads as a bug. A disabled one with a tooltip reads as a sequence.                                                                                                 |
 | Widgets may override the dashboard dataset                     | The form asks for a dataset first, and a dashboard that can only ever read one source makes that question meaningless. The override is optional, so older configurations are unaffected. |
+
+### Phase 7: persistence
+
+| Decision                                                      | Why                                                                                                                                                                    |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Compare and swap on every save                                | Last write wins loses work silently, which is the same failure as a stale number shown as live. A refusal costs a decision; the alternative costs someone's afternoon. |
+| A conflict is an outcome, not an error                        | It is expected, it is not retryable, and treating it as a failure would either retry it or hide it behind a toast.                                                     |
+| No automatic merge                                            | Merging two layouts without asking produces an arrangement neither person made. The diff is shown per widget and the choice stays with the reader.                     |
+| Storage runs through the chaos transport                      | A save that is always instant and always succeeds would leave the pending, failed and refused states untested by the very reviewer who is meant to see them.           |
+| The configuration is stored as text                           | It comes back in as input, through the same loader, so a hand edited record cannot take a different path into the renderer than a pasted one.                          |
+| Revisions capped at 30, oldest pruned, and the cap is shown   | localStorage is a few megabytes per origin. An uncapped history is a quota failure waiting to happen, and a silent cap is a promise quietly broken.                    |
+| Restore is a new save, not a rewrite                          | History that can be rewritten is not history. Restoring appends, so the version you restored from is still there afterwards.                                           |
+| Another tab's save is news, never an action                   | Reloading on someone's behalf is the one move that can destroy unsaved work, so the banner offers reload only when there is no draft, and comparison when there is.    |
+| Import lands as a draft, never as a save                      | A file is input from outside. It goes through the loader and then in front of a person, rather than straight over a stored dashboard.                                  |
+| The store is an interface with an AbortSignal on every method | The localStorage implementation is a stand in for a backend. Writing the seams now means a REST version replaces one file rather than the UI.                          |
 
 ## Open questions
 

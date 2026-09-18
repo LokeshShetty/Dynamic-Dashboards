@@ -1,10 +1,14 @@
 import { useEffect, useMemo } from 'react'
 
 import { useQueryClient } from '@tanstack/react-query'
-import { Database, History, Pencil, RefreshCw } from 'lucide-react'
+import { Database, History, Pencil, RefreshCw, Save } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/lib/store'
+import { isDraftDirty } from '@/lib/store/slices/draft.slice'
+import { SaveNoticeBanner } from '@/storage/_components/save-notice-banner'
+import { dashboardQueryKey } from '@/storage/_hooks/use-dashboard-record'
+import { useSaveNotices } from '@/storage/_hooks/use-save-notices'
 
 import { useEditMode } from '../_hooks/use-edit-mode'
 import { useFilterValues } from '../_hooks/use-filter-values'
@@ -12,6 +16,7 @@ import type { DashboardShell } from '../_lib/config.schema'
 import { toDataFilters } from '../_lib/to-data-query'
 import type { WidgetSlot } from '../_types'
 import { DashboardGrid } from './dashboard-grid'
+import { DashboardTransfer } from './dashboard-transfer'
 import { EditorGrid } from './editor/editor-grid'
 import { FilterBar } from './filters/filter-bar'
 
@@ -19,14 +24,25 @@ type Props = {
   shell: DashboardShell
   slots: WidgetSlot[]
   migratedFrom: number | null
+  /** What the store says about this dashboard, so the header can show where the save is. */
+  saved: { version: number; savedAt: string; config: string; revisionCount: number }
 }
 
-export function LoadedDashboard({ shell, slots, migratedFrom }: Props) {
+export function LoadedDashboard({ shell, slots, migratedFrom, saved }: Props) {
   const queryClient = useQueryClient()
   const { values, activeCount, ignored, setValue, reset } = useFilterValues(shell.filters)
   const { isEditing, enterEditMode, leaveEditMode } = useEditMode()
   const startDraft = useAppStore((state) => state.startDraft)
   const discardDraft = useAppStore((state) => state.discardDraft)
+  const draft = useAppStore((state) => state.draft)
+  const draftBaseline = useAppStore((state) => state.draftBaseline)
+  const { notice, dismiss } = useSaveNotices(shell.id)
+  const isDirty = isDraftDirty(draft, draftBaseline)
+
+  const reloadSaved = () => {
+    dismiss()
+    void queryClient.invalidateQueries({ queryKey: dashboardQueryKey(shell.id) })
+  }
 
   // The draft is taken from the loaded configuration when editing starts, and thrown away when
   // it ends. Nothing in edit mode touches what the reader sees until a save exists.
@@ -60,7 +76,13 @@ export function LoadedDashboard({ shell, slots, migratedFrom }: Props) {
             <span>
               {slots.length} widget{slots.length === 1 ? '' : 's'}
             </span>
-            <span>saved version {shell.version}</span>
+            <span className="inline-flex items-center gap-1">
+              <Save aria-hidden="true" className="size-3" />
+              saved version {saved.version}
+            </span>
+            <span>
+              {saved.revisionCount} revision{saved.revisionCount === 1 ? '' : 's'} kept
+            </span>
             {migratedFrom === null ? null : (
               <span className="text-fg inline-flex items-center gap-1">
                 <History aria-hidden="true" className="size-3" />
@@ -70,7 +92,12 @@ export function LoadedDashboard({ shell, slots, migratedFrom }: Props) {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <DashboardTransfer
+            dashboardId={shell.id}
+            config={saved.config}
+            onImported={enterEditMode}
+          />
           {isEditing ? null : (
             <Button onClick={enterEditMode}>
               <Pencil aria-hidden="true" className="size-4" />
@@ -84,6 +111,16 @@ export function LoadedDashboard({ shell, slots, migratedFrom }: Props) {
         </div>
       </header>
 
+      {notice === null ? null : (
+        <SaveNoticeBanner
+          notice={notice}
+          isDirty={isDirty}
+          onReload={reloadSaved}
+          onCompare={enterEditMode}
+          onDismiss={dismiss}
+        />
+      )}
+
       <FilterBar
         filters={shell.filters}
         dataset={shell.dataset}
@@ -95,7 +132,12 @@ export function LoadedDashboard({ shell, slots, migratedFrom }: Props) {
       />
 
       {isEditing ? (
-        <EditorGrid filters={filterContext} onLeave={leaveEditMode} />
+        <EditorGrid
+          dashboardId={shell.id}
+          filters={filterContext}
+          onLeave={leaveEditMode}
+          onReloadSaved={reloadSaved}
+        />
       ) : (
         <DashboardGrid shell={shell} slots={slots} filters={filterContext} />
       )}

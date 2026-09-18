@@ -22,6 +22,10 @@ export type DraftSlice = {
   startDraft: (dashboardId: string, shell: DashboardShell) => void
   discardDraft: () => void
   resetDraft: () => void
+  /** After a successful save the draft is what is stored, so it stops being dirty. */
+  markDraftSaved: () => void
+  /** Used by import: an entire configuration arrives as a draft to be reviewed. */
+  replaceDraft: (dashboardId: string, shell: DashboardShell) => void
   setDraftWidgets: (widgets: unknown[]) => void
 }
 
@@ -45,6 +49,11 @@ export const createDraftSlice: StateCreator<DraftSlice> = (set, get) => ({
         : { draft: { ...state.draft, shell: state.draftBaseline } },
     ),
 
+  markDraftSaved: () =>
+    set((state) => (state.draft === null ? state : { draftBaseline: state.draft.shell })),
+
+  replaceDraft: (dashboardId, shell) => set({ draft: { dashboardId, shell }, draftBaseline: null }),
+
   setDraftWidgets: (widgets) =>
     set((state) =>
       state.draft === null
@@ -53,7 +62,9 @@ export const createDraftSlice: StateCreator<DraftSlice> = (set, get) => ({
     ),
 })
 
+/** A draft with no baseline arrived from outside, by import, so it is dirty until it is saved. */
 export function isDraftDirty(draft: Draft | null, baseline: DashboardShell | null) {
-  if (!draft || baseline === null) return false
+  if (!draft) return false
+  if (baseline === null) return true
   return JSON.stringify(draft.shell) !== JSON.stringify(baseline)
 }
