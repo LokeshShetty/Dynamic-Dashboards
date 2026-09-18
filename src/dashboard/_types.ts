@@ -1,4 +1,4 @@
-import type { DataError, DataResult } from '@/data/_types'
+import type { DataResult } from '@/data/_types'
 
 import type { DashboardShell, Widget } from './_lib/config.schema'
 
@@ -31,6 +31,7 @@ export type WidgetSlot =
   | { kind: 'valid'; index: number; id: string; widget: Widget }
   | { kind: 'invalid'; index: number; id: string | null; issues: ConfigIssue[] }
   | { kind: 'duplicate-id'; index: number; id: string; firstIndex: number }
+  | { kind: 'overlapping-layout'; index: number; id: string; overlapsId: string }
 
 /** The outcome of the whole load pipeline. Every branch can be rendered without a blank screen. */
 export type DashboardLoad =
@@ -46,21 +47,31 @@ export type DashboardLoad =
   | { kind: 'invalid'; error: ConfigError; rawText: string }
 
 /**
- * What a widget knows about its data right now. Every branch is a thing the frame can show,
- * and none of them can be mistaken for another: stale carries both the data and the failure,
- * so old numbers are never presented as live ones.
+ * Everything a widget can be, as one union. The frame renders these and nothing else renders
+ * them, so a widget cannot invent a state of its own, and none of these can be mistaken for
+ * another: stale carries the data and the failure together, so old numbers are never
+ * presented as live ones.
  */
-export type WidgetDataState =
+export type WidgetState<TResult = DataResult> =
+  | { kind: 'invalid'; reason: string; issues: ConfigIssue[] }
+  | { kind: 'unresolvable'; reason: string }
   | { kind: 'loading'; attempt: number; maxAttempts: number }
-  | { kind: 'ok'; result: DataResult; fetchedAt: number; isRefreshing: boolean }
   | { kind: 'empty'; fetchedAt: number; isRefreshing: boolean }
+  | { kind: 'ok'; result: TResult; fetchedAt: number; isRefreshing: boolean }
   | {
       kind: 'stale'
-      result: DataResult
+      result: TResult
       fetchedAt: number
-      failure: DataError
       failedAt: number
+      reason: string
+      attempt: number
+      maxAttempts: number
       isRefreshing: boolean
     }
-  | { kind: 'error'; error: DataError; attempt: number; maxAttempts: number }
-  | { kind: 'unresolvable-binding'; error: DataError }
+  | {
+      kind: 'error'
+      reason: string
+      attempt: number
+      maxAttempts: number
+      isRefreshing: boolean
+    }

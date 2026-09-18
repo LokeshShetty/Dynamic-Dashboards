@@ -30,7 +30,8 @@ export function isBindingDataError(error: DataError) {
   return (
     error.kind === 'unknown-dataset' ||
     error.kind === 'unknown-field' ||
-    error.kind === 'field-type'
+    error.kind === 'field-type' ||
+    error.kind === 'too-many-series'
   )
 }
 
@@ -47,8 +48,11 @@ export function describeDataError(error: DataError): string {
     case 'unknown-dataset':
       return `dataset "${error.dataset}" does not exist`
     case 'unknown-field':
-      return `field "${error.field}" does not exist in ${error.dataset}`
+      return `field "${error.field}" not found in dataset "${error.dataset}"`
     case 'field-type':
       return `field "${error.field}" is ${error.actual}, and this needs ${error.expected}`
+
+    case 'too-many-series':
+      return `grouping by "${error.field}" produced ${error.found} series, and the limit is ${error.limit}`
   }
 }

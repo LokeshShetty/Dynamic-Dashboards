@@ -24,6 +24,8 @@ export function corruptDataResult(result: DataResult): unknown {
         kind: 'series',
         points: result.points.map((point) => ({ values: point.values })),
         matchedRows: result.matchedRows,
+        x: result.x,
+        series: result.series,
       }
   }
 }
@@ -31,7 +33,12 @@ export function corruptDataResult(result: DataResult): unknown {
 export function corruptDatasetSchema(schema: DatasetSchema): unknown {
   return {
     dataset: schema.dataset,
-    fields: schema.fields.map((field) => ({ name: field.name, type: 'mystery', nullable: null })),
+    fields: schema.fields.map((field) => ({
+      name: field.name,
+      type: 'mystery',
+      nullable: null,
+      unit: 'furlongs',
+    })),
     rowCount: 'lots',
   }
 }

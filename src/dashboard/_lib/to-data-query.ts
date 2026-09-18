@@ -1,6 +1,7 @@
+import { TABLE_FETCH_LIMIT } from '@/data/_constants'
 import type { DataFilter, DataQuery } from '@/data/_types'
 
-import type { DashboardFilter, Widget } from './config.schema'
+import type { ChartWidget, DashboardFilter, MetricWidget, TableWidget } from './config.schema'
 
 /**
  * Turns a validated widget and the filter values in force into a data query. Pure, so the
@@ -54,48 +55,57 @@ export function toDataFilters(
   return applied
 }
 
-/** Text widgets have no binding, so they never ask the data layer anything. */
-export function toDataQuery(
-  widget: Widget,
+export function toMetricQuery(
+  widget: MetricWidget,
   dataset: string,
   filters: DataFilter[],
-): DataQuery | null {
-  switch (widget.kind) {
-    case 'metric':
-      return {
-        dataset,
-        filters,
-        select: { kind: 'aggregate', field: widget.value.field, aggregate: widget.value.aggregate },
-      }
+): DataQuery {
+  return {
+    dataset,
+    filters,
+    select: { kind: 'aggregate', field: widget.value.field, aggregate: widget.value.aggregate },
+  }
+}
 
-    case 'table':
-      return {
-        dataset,
-        filters,
-        select: {
-          kind: 'rows',
-          fields: widget.columns.map((column) => column.field),
-          sort: widget.sort ?? null,
-          limit: widget.pageSize,
-        },
-      }
+/**
+ * Tables fetch a capped window and sort and page over it in the browser, so a reader can
+ * reorder a column without waiting on the source again. The cap is visible to the table, which
+ * says how many rows matched in total rather than implying it has them all.
+ */
+export function toTableQuery(
+  widget: TableWidget,
+  dataset: string,
+  filters: DataFilter[],
+): DataQuery {
+  return {
+    dataset,
+    filters,
+    select: {
+      kind: 'rows',
+      fields: widget.columns.map((column) => column.field),
+      sort: widget.sort ?? null,
+      limit: TABLE_FETCH_LIMIT,
+    },
+  }
+}
 
-    case 'chart':
-      return {
-        dataset,
-        filters,
-        select: {
-          kind: 'series',
-          x: { field: widget.x.field, bucket: widget.x.bucket ?? null },
-          series: widget.series.map((series, index) => ({
-            key: `s${index}`,
-            field: series.field,
-            aggregate: series.aggregate,
-          })),
-        },
-      }
-
-    case 'text':
-      return null
+export function toChartQuery(
+  widget: ChartWidget,
+  dataset: string,
+  filters: DataFilter[],
+): DataQuery {
+  return {
+    dataset,
+    filters,
+    select: {
+      kind: 'series',
+      x: { field: widget.x.field, bucket: widget.x.bucket ?? null },
+      series: widget.series.map((series, index) => ({
+        key: `s${index}`,
+        field: series.field,
+        aggregate: series.aggregate,
+      })),
+      groupBy: widget.groupBy?.field ?? null,
+    },
   }
 }

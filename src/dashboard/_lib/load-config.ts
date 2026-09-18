@@ -5,6 +5,7 @@ import type { ConfigError, DashboardLoad, WidgetSlot } from '../_types'
 import { toConfigIssues } from './config-issues'
 import { dashboardShellSchema, widgetSchema } from './config.schema'
 import { guardRawText, guardShape } from './guard'
+import { markOverlappingWidgets } from './layout'
 import { migrateToCurrent, readSchemaVersion } from './migrate'
 
 /**
@@ -64,7 +65,7 @@ export function loadDashboardConfig(rawText: string): DashboardLoad {
   return {
     kind: 'loaded',
     shell: shell.data,
-    slots: toWidgetSlots(shell.data.widgets),
+    slots: markOverlappingWidgets(toWidgetSlots(shell.data.widgets)),
     migratedFrom: migrated.data.migratedFrom,
     rawText,
   }

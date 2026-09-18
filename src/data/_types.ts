@@ -1,4 +1,4 @@
-import type { Aggregate, FieldType, TimeBucket } from '@/constants/data'
+import type { Aggregate, FieldType, FieldUnit, TimeBucket } from '@/constants/data'
 import type { DataRow, DatasetSchema, DataValue } from '@/types/data'
 
 /** Predicates, not dashboard filter kinds: the data layer knows nothing about the UI. */
@@ -15,7 +15,13 @@ export type SeriesBinding = { key: string; field: string; aggregate: Aggregate }
 export type DataSelect =
   | { kind: 'aggregate'; field: string; aggregate: Aggregate }
   | { kind: 'rows'; fields: string[]; sort: DataSort | null; limit: number }
-  | { kind: 'series'; x: { field: string; bucket: TimeBucket | null }; series: SeriesBinding[] }
+  | {
+      kind: 'series'
+      x: { field: string; bucket: TimeBucket | null }
+      series: SeriesBinding[]
+      /** One series per distinct value of this field, instead of one series per binding. */
+      groupBy: string | null
+    }
 
 export type DataQuery = {
   dataset: string
@@ -25,10 +31,44 @@ export type DataQuery = {
 
 export type SeriesPoint = { x: string; values: Record<string, number | null> }
 
+/** What a result says about the fields it was computed from, as they are right now. */
+export type ResolvedField = { name: string; type: FieldType; unit: FieldUnit | null }
+
+/**
+ * A table column resolves on its own. One missing column does not cost the reader the other
+ * nine, so the column carries its own verdict rather than failing the whole query.
+ */
+export type ResolvedColumn =
+  | { kind: 'resolved'; field: ResolvedField }
+  | { kind: 'unresolved'; name: string; available: string[] }
+
+export type ResolvedSort =
+  | { kind: 'applied'; field: string; direction: DataSort['direction'] }
+  | { kind: 'unresolved'; field: string }
+
+export type SeriesDescriptor = {
+  key: string
+  field: ResolvedField
+  /** The value of the group by field this series covers, when the chart groups. */
+  groupValue: string | null
+}
+
 export type DataResult =
-  | { kind: 'value'; value: DataValue; matchedRows: number }
-  | { kind: 'rows'; rows: DataRow[]; matchedRows: number }
-  | { kind: 'series'; points: SeriesPoint[]; matchedRows: number }
+  | { kind: 'value'; value: DataValue; matchedRows: number; field: ResolvedField }
+  | {
+      kind: 'rows'
+      rows: DataRow[]
+      matchedRows: number
+      columns: ResolvedColumn[]
+      sort: ResolvedSort | null
+    }
+  | {
+      kind: 'series'
+      points: SeriesPoint[]
+      matchedRows: number
+      x: ResolvedField
+      series: SeriesDescriptor[]
+    }
 
 /**
  * Why a request could not answer. The three binding kinds are separated from the three
@@ -43,6 +83,7 @@ export type DataError =
   | { kind: 'unknown-dataset'; dataset: string; available: string[] }
   | { kind: 'unknown-field'; dataset: string; field: string; available: string[] }
   | { kind: 'field-type'; dataset: string; field: string; actual: FieldType; expected: string }
+  | { kind: 'too-many-series'; dataset: string; field: string; found: number; limit: number }
 
 export type EffectiveDataset = {
   schema: DatasetSchema

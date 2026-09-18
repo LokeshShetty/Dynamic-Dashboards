@@ -1,4 +1,4 @@
-import type { FieldType } from '@/constants/data'
+import type { FieldType, FieldUnit } from '@/constants/data'
 
 /** Every value a dataset cell can hold. Dates are ISO strings with a date field type. */
 export type DataValue = string | number | boolean | null
@@ -9,6 +9,8 @@ export type DatasetField = {
   name: string
   type: FieldType
   nullable: boolean
+  /** What the values mean, where the numbers alone do not say. */
+  unit: FieldUnit | null
 }
 
 /**

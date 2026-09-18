@@ -74,12 +74,13 @@ describe('useWidgetData', () => {
     // question so that its answer really does arrive, late, rather than being cancelled.
     const { result, rerender } = renderHook(
       ({ query }: { query: DataQuery }) => ({
-        followsFilter: useWidgetData({ dashboardId: DASHBOARD_ID, widgetId: WIDGET_ID, query }),
+        followsFilter: useWidgetData({ dashboardId: DASHBOARD_ID, widgetId: WIDGET_ID, query })
+          .state,
         staysOnSlowQuery: useWidgetData({
           dashboardId: DASHBOARD_ID,
           widgetId: WIDGET_ID,
           query: slowQuery,
-        }),
+        }).state,
       }),
       { initialProps: { query: slowQuery }, wrapper: createWrapper() },
     )

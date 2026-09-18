@@ -2,6 +2,7 @@ import type { Aggregate, TimeBucket } from '@/constants/data'
 import { err, ok, type Result } from '@/lib/result'
 import type { DataRow, DatasetField, DataValue } from '@/types/data'
 
+import { MAX_SERIES_PER_CHART } from '../_constants'
 import type {
   DataError,
   DataFilter,
@@ -9,7 +10,11 @@ import type {
   DataResult,
   DataSort,
   EffectiveDataset,
+  ResolvedColumn,
+  ResolvedField,
+  ResolvedSort,
   SeriesBinding,
+  SeriesDescriptor,
   SeriesPoint,
 } from '../_types'
 
@@ -39,22 +44,31 @@ export function executeQuery(
         kind: 'value',
         value: aggregate(rows, field.data.name, select.aggregate),
         matchedRows: rows.length,
+        field: describe(field.data),
       })
     }
 
     case 'rows': {
-      for (const name of select.fields) {
+      // Columns resolve one at a time: a table with one missing column is still a table.
+      const columns: ResolvedColumn[] = select.fields.map((name) => {
         const field = findField(dataset, name)
-        if (!field.ok) return field
-      }
+        return field.ok
+          ? { kind: 'resolved', field: describe(field.data) }
+          : { kind: 'unresolved', name, available: fieldNames(dataset) }
+      })
+
+      const resolvedNames = columns.flatMap((column) =>
+        column.kind === 'resolved' ? [column.field.name] : [],
+      )
 
       const sorted = sortRows(rows, select.sort, dataset)
-      if (!sorted.ok) return sorted
 
       return ok({
         kind: 'rows',
-        rows: sorted.data.slice(0, select.limit).map((row) => project(row, select.fields)),
+        rows: sorted.rows.slice(0, select.limit).map((row) => project(row, resolvedNames)),
         matchedRows: rows.length,
+        columns,
+        sort: sorted.sort,
       })
     }
 
@@ -70,13 +84,45 @@ export function executeQuery(
         if (!checked.ok) return checked
       }
 
-      return ok({
-        kind: 'series',
-        points: buildSeries(rows, xField.data, select.x.bucket, select.series),
-        matchedRows: rows.length,
-      })
+      if (select.groupBy === null) {
+        const series: SeriesDescriptor[] = select.series.map((binding) => ({
+          key: binding.key,
+          field: describeByName(dataset, binding.field),
+          groupValue: null,
+        }))
+
+        return ok({
+          kind: 'series',
+          points: buildSeries(rows, xField.data, select.x.bucket, select.series),
+          matchedRows: rows.length,
+          x: describe(xField.data),
+          series,
+        })
+      }
+
+      return groupedSeries(
+        rows,
+        dataset,
+        xField.data,
+        select.x.bucket,
+        select.series,
+        select.groupBy,
+      )
     }
   }
+}
+
+function fieldNames(dataset: EffectiveDataset) {
+  return dataset.schema.fields.map((candidate) => candidate.name)
+}
+
+function describe(field: DatasetField): ResolvedField {
+  return { name: field.name, type: field.type, unit: field.unit }
+}
+
+function describeByName(dataset: EffectiveDataset, name: string): ResolvedField {
+  const field = dataset.schema.fields.find((candidate) => candidate.name === name)
+  return field ? describe(field) : { name, type: 'text', unit: null }
 }
 
 function findField(dataset: EffectiveDataset, name: string): Result<DatasetField, DataError> {
@@ -87,7 +133,7 @@ function findField(dataset: EffectiveDataset, name: string): Result<DatasetField
     kind: 'unknown-field',
     dataset: dataset.schema.dataset,
     field: name,
-    available: dataset.schema.fields.map((candidate) => candidate.name),
+    available: fieldNames(dataset),
   })
 }
 
@@ -157,22 +203,27 @@ function matches(value: DataValue, filter: DataFilter): boolean {
   }
 }
 
+/**
+ * A sort field that no longer exists does not cost the reader their rows. The rows come back
+ * in their natural order and the result says the sort could not be applied, so the table can
+ * say so rather than implying an order it does not have.
+ */
 function sortRows(
   rows: ReadonlyArray<DataRow>,
   sort: DataSort | null,
   dataset: EffectiveDataset,
-): Result<DataRow[], DataError> {
-  if (!sort) return ok([...rows])
+): { rows: DataRow[]; sort: ResolvedSort | null } {
+  if (!sort) return { rows: [...rows], sort: null }
 
   const field = findField(dataset, sort.field)
-  if (!field.ok) return field
+  if (!field.ok) return { rows: [...rows], sort: { kind: 'unresolved', field: sort.field } }
 
   const direction = sort.direction === 'desc' ? -1 : 1
   const sorted = [...rows].sort(
     (left, right) => compare(left[sort.field] ?? null, right[sort.field] ?? null) * direction,
   )
 
-  return ok(sorted)
+  return { rows: sorted, sort: { kind: 'applied', field: sort.field, direction: sort.direction } }
 }
 
 function compare(left: DataValue, right: DataValue): number {
@@ -227,8 +278,9 @@ function bucketKey(value: DataValue, bucket: TimeBucket | null): string {
 
   const date = new Date(time)
 
-  if (bucket === 'month')
+  if (bucket === 'month') {
     return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`
+  }
 
   if (bucket === 'week') {
     const start = new Date(date)
@@ -239,12 +291,11 @@ function bucketKey(value: DataValue, bucket: TimeBucket | null): string {
   return date.toISOString().slice(0, 10)
 }
 
-function buildSeries(
+function groupRowsByX(
   rows: ReadonlyArray<DataRow>,
   xField: DatasetField,
   bucket: TimeBucket | null,
-  bindings: ReadonlyArray<SeriesBinding>,
-): SeriesPoint[] {
+) {
   const groups = new Map<string, DataRow[]>()
 
   for (const row of rows) {
@@ -254,7 +305,16 @@ function buildSeries(
     else groups.set(key, [row])
   }
 
-  return [...groups.entries()]
+  return groups
+}
+
+function buildSeries(
+  rows: ReadonlyArray<DataRow>,
+  xField: DatasetField,
+  bucket: TimeBucket | null,
+  bindings: ReadonlyArray<SeriesBinding>,
+): SeriesPoint[] {
+  return [...groupRowsByX(rows, xField, bucket).entries()]
     .map(([x, group]) => ({
       x,
       values: Object.fromEntries(
@@ -265,4 +325,68 @@ function buildSeries(
       ),
     }))
     .sort((left, right) => left.x.localeCompare(right.x))
+}
+
+/** One series per distinct value of the group by field, capped so a chart stays readable. */
+function groupedSeries(
+  rows: ReadonlyArray<DataRow>,
+  dataset: EffectiveDataset,
+  xField: DatasetField,
+  bucket: TimeBucket | null,
+  bindings: ReadonlyArray<SeriesBinding>,
+  groupBy: string,
+): Result<DataResult, DataError> {
+  const groupField = findField(dataset, groupBy)
+  if (!groupField.ok) return groupField
+
+  const binding = bindings[0]
+  if (!binding) {
+    return err({
+      kind: 'unknown-field',
+      dataset: dataset.schema.dataset,
+      field: groupBy,
+      available: fieldNames(dataset),
+    })
+  }
+
+  const groupValues = [
+    ...new Set(rows.map((row) => String(row[groupField.data.name] ?? 'unknown'))),
+  ].sort()
+
+  if (groupValues.length > MAX_SERIES_PER_CHART) {
+    return err({
+      kind: 'too-many-series',
+      dataset: dataset.schema.dataset,
+      field: groupBy,
+      found: groupValues.length,
+      limit: MAX_SERIES_PER_CHART,
+    })
+  }
+
+  // The descriptor names the field being measured, not the field being grouped by: the
+  // series is "billed amount, for this payer", and formatting follows the amount.
+  const measured = describeByName(dataset, binding.field)
+
+  const series: SeriesDescriptor[] = groupValues.map((value, index) => ({
+    key: `g${index}`,
+    field: measured,
+    groupValue: value,
+  }))
+
+  const points = [...groupRowsByX(rows, xField, bucket).entries()]
+    .map(([x, group]) => ({
+      x,
+      values: Object.fromEntries(
+        series.map((descriptor) => {
+          const inGroup = group.filter(
+            (row) => String(row[groupField.data.name] ?? 'unknown') === descriptor.groupValue,
+          )
+          const value = aggregate(inGroup, binding.field, binding.aggregate)
+          return [descriptor.key, typeof value === 'number' ? value : null]
+        }),
+      ),
+    }))
+    .sort((left, right) => left.x.localeCompare(right.x))
+
+  return ok({ kind: 'series', points, matchedRows: rows.length, x: describe(xField), series })
 }

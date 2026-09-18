@@ -47,10 +47,29 @@ const numberFormatSchema = z.strictObject({
   currency: z.string().length(3).optional(),
 })
 
-const layoutSchema = z.strictObject({
-  colSpan: z.number().int().min(1).max(CONFIG_LIMITS.MAX_GRID_COLUMNS),
-  rowSpan: z.number().int().min(1).max(CONFIG_LIMITS.MAX_ROW_SPAN),
-})
+/**
+ * A place on the 12 column grid. A widget that runs past the right edge is rejected here, so
+ * it becomes one invalid tile rather than a layout that silently reflows the dashboard.
+ */
+const layoutSchema = z
+  .strictObject({
+    x: z
+      .number()
+      .int()
+      .min(0)
+      .max(CONFIG_LIMITS.MAX_GRID_COLUMNS - 1),
+    y: z
+      .number()
+      .int()
+      .min(0)
+      .max(CONFIG_LIMITS.MAX_GRID_ROWS - 1),
+    w: z.number().int().min(1).max(CONFIG_LIMITS.MAX_GRID_COLUMNS),
+    h: z.number().int().min(1).max(CONFIG_LIMITS.MAX_ROW_SPAN),
+  })
+  .refine((layout) => layout.x + layout.w <= CONFIG_LIMITS.MAX_GRID_COLUMNS, {
+    message: `a widget at x plus its width may not pass column ${CONFIG_LIMITS.MAX_GRID_COLUMNS}`,
+    path: ['w'],
+  })
 
 const widgetBaseShape = {
   id: idSchema,
@@ -84,23 +103,31 @@ const tableWidgetSchema = z.strictObject({
   sort: z.strictObject({ field: fieldNameSchema, direction: z.enum(SORT_DIRECTIONS) }).optional(),
 })
 
-const chartWidgetSchema = z.strictObject({
-  ...widgetBaseShape,
-  kind: z.literal('chart'),
-  chartType: z.enum(CHART_TYPES),
-  x: z.strictObject({ field: fieldNameSchema, bucket: z.enum(TIME_BUCKETS).optional() }),
-  series: z
-    .array(
-      z.strictObject({
-        field: fieldNameSchema,
-        aggregate: z.enum(AGGREGATES),
-        label: labelSchema.optional(),
-      }),
-    )
-    .min(1)
-    .max(CONFIG_LIMITS.MAX_CHART_SERIES),
-  stacked: z.boolean().optional(),
-})
+const chartWidgetSchema = z
+  .strictObject({
+    ...widgetBaseShape,
+    kind: z.literal('chart'),
+    chartType: z.enum(CHART_TYPES),
+    x: z.strictObject({ field: fieldNameSchema, bucket: z.enum(TIME_BUCKETS).optional() }),
+    series: z
+      .array(
+        z.strictObject({
+          field: fieldNameSchema,
+          aggregate: z.enum(AGGREGATES),
+          label: labelSchema.optional(),
+          format: numberFormatSchema.optional(),
+        }),
+      )
+      .min(1)
+      .max(CONFIG_LIMITS.MAX_CHART_SERIES),
+    /** One line per distinct value of this field, instead of one line per series binding. */
+    groupBy: z.strictObject({ field: fieldNameSchema }).optional(),
+    stacked: z.boolean().optional(),
+  })
+  .refine((chart) => chart.groupBy === undefined || chart.series.length === 1, {
+    message: 'a chart that groups by a field must bind exactly one series',
+    path: ['series'],
+  })
 
 const textWidgetSchema = z.strictObject({
   ...widgetBaseShape,

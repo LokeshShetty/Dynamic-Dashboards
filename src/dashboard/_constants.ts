@@ -1,5 +1,5 @@
 /** The newest configuration format this build can render. */
-export const CONFIG_SCHEMA_VERSION = 2
+export const CONFIG_SCHEMA_VERSION = 3
 
 /** The oldest configuration format this build can still migrate forward. */
 export const OLDEST_SUPPORTED_SCHEMA_VERSION = 1
@@ -22,6 +22,7 @@ export const CONFIG_LIMITS = {
   MAX_CHART_SERIES: 5,
   MAX_SELECT_OPTIONS: 50,
   MAX_GRID_COLUMNS: 12,
+  MAX_GRID_ROWS: 100,
   MAX_ROW_SPAN: 4,
   MAX_PAGE_SIZE: 100,
   MAX_DECIMALS: 4,
@@ -44,11 +45,11 @@ export const TEXT_TONES = ['default', 'note', 'warning'] as const
 export const COLUMN_ALIGNMENTS = ['left', 'right'] as const
 
 /** Presentation defaults a migration may supply. It may never supply a data binding. */
-export const DEFAULT_LAYOUT_BY_KIND = {
-  metric: { colSpan: 3, rowSpan: 1 },
-  chart: { colSpan: 6, rowSpan: 2 },
-  table: { colSpan: 12, rowSpan: 2 },
-  text: { colSpan: 12, rowSpan: 1 },
+export const DEFAULT_SIZE_BY_KIND = {
+  metric: { w: 3, h: 1 },
+  chart: { w: 6, h: 2 },
+  table: { w: 12, h: 2 },
+  text: { w: 12, h: 1 },
 } as const
 
 export const DEFAULT_GRID_COLUMNS = 12

@@ -1,9 +1,9 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "id": "demo",
   "title": "Claims operations",
-  "version": 4,
-  "updatedAt": "2026-09-01T09:00:00.000Z",
+  "version": 6,
+  "updatedAt": "2026-09-15T09:00:00.000Z",
   "dataset": "claims",
   "layout": {
     "columns": 12
@@ -68,7 +68,7 @@
       "field": "submitted_at",
       "defaultValue": {
         "from": "2026-08-01",
-        "to": "2026-08-31"
+        "to": "2026-09-15"
       }
     },
     {
@@ -85,8 +85,10 @@
       "kind": "metric",
       "title": "Billed",
       "layout": {
-        "colSpan": 3,
-        "rowSpan": 1
+        "x": 0,
+        "y": 0,
+        "w": 3,
+        "h": 1
       },
       "value": {
         "field": "amount_cents",
@@ -103,8 +105,10 @@
       "kind": "metric",
       "title": "Claims",
       "layout": {
-        "colSpan": 3,
-        "rowSpan": 1
+        "x": 3,
+        "y": 0,
+        "w": 3,
+        "h": 1
       },
       "value": {
         "field": "claim_id",
@@ -116,8 +120,10 @@
       "kind": "metric",
       "title": "Line items per claim",
       "layout": {
-        "colSpan": 3,
-        "rowSpan": 1
+        "x": 6,
+        "y": 0,
+        "w": 3,
+        "h": 1
       },
       "value": {
         "field": "line_items",
@@ -133,8 +139,10 @@
       "kind": "metric",
       "title": "Largest claim",
       "layout": {
-        "colSpan": 3,
-        "rowSpan": 1
+        "x": 9,
+        "y": 0,
+        "w": 3,
+        "h": 1
       },
       "value": {
         "field": "amount_cents",
@@ -147,37 +155,49 @@
       }
     },
     {
-      "id": "billed-by-day",
+      "id": "billed-by-week",
       "kind": "chart",
-      "title": "Billed by day",
+      "title": "Billed by week and payer",
       "layout": {
-        "colSpan": 8,
-        "rowSpan": 2
+        "x": 0,
+        "y": 1,
+        "w": 8,
+        "h": 2
       },
       "chartType": "line",
       "x": {
         "field": "submitted_at",
-        "bucket": "day"
+        "bucket": "week"
       },
       "series": [
         {
           "field": "amount_cents",
           "aggregate": "sum",
-          "label": "Billed"
+          "label": "Billed",
+          "format": {
+            "style": "currency",
+            "currency": "USD",
+            "decimals": 0
+          }
         }
-      ]
+      ],
+      "groupBy": {
+        "field": "payer"
+      }
     },
     {
-      "id": "claims-by-payer",
+      "id": "claims-by-status",
       "kind": "chart",
-      "title": "Claims by payer",
+      "title": "Claims by status",
       "layout": {
-        "colSpan": 4,
-        "rowSpan": 2
+        "x": 8,
+        "y": 1,
+        "w": 4,
+        "h": 2
       },
       "chartType": "bar",
       "x": {
-        "field": "payer"
+        "field": "status"
       },
       "series": [
         {
@@ -192,8 +212,10 @@
       "kind": "table",
       "title": "Recent claims",
       "layout": {
-        "colSpan": 12,
-        "rowSpan": 2
+        "x": 0,
+        "y": 3,
+        "w": 12,
+        "h": 2
       },
       "columns": [
         {
@@ -223,7 +245,7 @@
           }
         }
       ],
-      "pageSize": 10,
+      "pageSize": 8,
       "sort": {
         "field": "submitted_at",
         "direction": "desc"
@@ -234,10 +256,12 @@
       "kind": "text",
       "title": "How to read this",
       "layout": {
-        "colSpan": 12,
-        "rowSpan": 1
+        "x": 0,
+        "y": 5,
+        "w": 12,
+        "h": 1
       },
-      "body": "Figures cover the selected filters only. A widget that cannot reach its data says so on the tile instead of showing a stale number.",
+      "body": "Figures cover the selected filters only. A widget that cannot reach its data says so on the tile instead of showing a stale number.\n\n- **Stale** means the numbers are old and the refresh failed.\n- **Unresolvable** means the configuration points at something the dataset no longer has.",
       "tone": "note"
     }
   ]

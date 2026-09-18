@@ -4,6 +4,7 @@ import { err, ok, type Result } from '@/lib/result'
 import { CONFIG_SCHEMA_VERSION, OLDEST_SUPPORTED_SCHEMA_VERSION } from '../_constants'
 import type { ConfigError } from '../_types'
 import { migrateV1ToV2 } from './migrations/v1-to-v2'
+import { migrateV2ToV3 } from './migrations/v2-to-v3'
 
 /**
  * Migrations are pure, idempotent and chained by version. Each one takes unknown input,
@@ -15,7 +16,10 @@ type Migration = {
   migrate: (input: unknown) => unknown
 }
 
-const MIGRATIONS: readonly Migration[] = [{ from: 1, to: 2, migrate: migrateV1ToV2 }]
+const MIGRATIONS: readonly Migration[] = [
+  { from: 1, to: 2, migrate: migrateV1ToV2 },
+  { from: 2, to: 3, migrate: migrateV2ToV3 },
+]
 
 export type MigrationOutcome = {
   value: unknown

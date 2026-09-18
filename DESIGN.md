@@ -23,7 +23,7 @@ Three failure modes the promise rules out:
 | 1. Project setup                          | Done        |
 | 2. Config schema, migrations, tests       | Done        |
 | 3. Data layer, chaos controls, fetch hook | Done        |
-| 4. Rendering and the four widget types    | Not started |
+| 4. Rendering and the four widget types    | Done        |
 | 5. Dashboard filters                      | Not started |
 | 6. Widget editor                          | Not started |
 | 7. Persistence, revisions, conflicts      | Not started |
@@ -250,6 +250,75 @@ Two states deserve their wording:
 | Empty is distinguished from zero, stale from fresh, binding from bug | Our state mapping                                      |
 | A malformed payload is rejected rather than rendered                 | Our response schemas                                   |
 
+## Rendering
+
+### One union, one renderer
+
+A widget is in exactly one of seven states, and `WidgetFrame` is the only component that renders
+any of them:
+
+| State          | What it means                                 | What the tile shows                                                        |
+| -------------- | --------------------------------------------- | -------------------------------------------------------------------------- |
+| `invalid`      | The configuration for this widget is wrong    | Badge, the reason, the failing paths, and the widget's own JSON            |
+| `unresolvable` | The configuration no longer matches the world | Badge and the field or dataset that is missing, renamed or the wrong type  |
+| `loading`      | First answer has not arrived                  | A skeleton shaped like the widget that is coming                           |
+| `ok`           | Current data                                  | The widget                                                                 |
+| `empty`        | The query matched nothing                     | Badge and a sentence saying so, never a zero                               |
+| `error`        | The source could not answer                   | Badge, the reason, a retry button, and `retrying (n/3)` while it retries   |
+| `stale`        | Old data, and the refresh failed              | The old data dimmed, `stale since HH:MM:SS, refresh failed: reason`, retry |
+
+Widget bodies receive data or they are not rendered at all. They cannot render a spinner, a
+zero, an empty string or an error of their own, because they are never called in those states.
+
+Every tile also carries a **Show configuration** disclosure, including tiles that failed before
+a widget existed: the raw entry is kept from the loader and printed as it was written.
+
+### The crash net
+
+Each widget body sits in its own error boundary. If something throws for a reason nothing
+predicted, the tile becomes `Widget crashed: <message>` with a retry button, the crash is logged
+as `widget.render.crashed`, and every other widget on the dashboard carries on.
+
+### Per widget decisions
+
+- **Metric.** One aggregate over one field. Anything other than `count` over a non numeric field
+  is refused by name: `a sum needs a number field, and "status" is text`. There is no coercion
+  anywhere, so a missing or non numeric value cannot arrive as `NaN` or as `0`.
+- **Table.** Columns resolve one at a time. A renamed column is marked unresolvable in its own
+  header, its cells show a dash, and the other columns still render. Sorting and paging happen
+  in the browser over a capped window of rows; the footer says how many rows matched in total, so
+  a capped window is never mistaken for the whole result. A configured sort field that has
+  disappeared leaves the rows in their natural order and says so rather than implying an order.
+- **Chart.** Recharts is lazy loaded behind a skeleton of the same size, so the 380 KB it costs
+  only arrives when a chart is actually on screen. A numeric x axis is refused, because plotting
+  numbers as categories invents an ordering; a non numeric y is refused, because there is nothing
+  to measure. Grouping by a field produces one line per value, capped at eight, and a chart that
+  would need more says how many it found.
+- **Text.** The body is parsed into tokens and rendered as React elements. There is no HTML path
+  anywhere and the grammar has no links or images, so there is nothing for a hostile
+  configuration to smuggle a URL or a script through. `dangerouslySetInnerHTML` is banned by lint.
+
+### Layout
+
+Widgets are placed on a 12 column grid by `layout { x, y, w, h }`. A widget that runs past the
+right edge fails validation and becomes one invalid tile. Two widgets that claim the same cell
+are a collision: the first keeps the cell and the second becomes an invalid tile naming what it
+collided with, rather than the grid silently reflowing so that a dashboard never looks the same
+twice.
+
+### Money
+
+Field schemas carry a unit. `amount_cents` holds cents, so a currency format divides by a hundred
+and renders `$4,210`. A currency format over a field with no money unit has no correct answer, so
+it is an unresolvable presentation with a reason rather than a silent fallback to a plain number
+that a claims reader would read as dollars anyway.
+
+### Refreshing
+
+Every tile has its own refresh, and the dashboard header has one that invalidates every widget on
+it. Both go through the same query keys as everything else, so a manual refresh cannot produce a
+state the automatic path could not.
+
 ## Decision log
 
 ### Phase 1: project setup
@@ -290,6 +359,20 @@ Two states deserve their wording:
 | The chaos epoch is part of every query key          | It is the only way a cache can find out that a saved configuration now points at a world that no longer matches it.                                                        |
 | Empty is a state, not a zero                        | A metric with no matching rows that renders 0 is the most confident possible way to show something untrue.                                                                 |
 | The client throws, everything else returns a Result | TanStack Query decides what to retry from a rejected promise. The throw is confined to that boundary and carries a typed error, so nothing parses a message to decide.     |
+
+### Phase 4: rendering
+
+| Decision                                               | Why                                                                                                                                                                                |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| One state union, rendered in exactly one component     | If a widget body could render its own loading or error state, the promise would have to be re-checked in four places and would quietly stop holding in the fifth.                  |
+| A table resolves each column on its own                | One renamed column costing the reader nine good ones is a worse failure than the rename. The dead column is marked in its own header, so nothing is hidden by keeping the rest.    |
+| A metric or a chart fails whole                        | Unlike a column, a metric with a missing field has nothing left to show, and a chart missing its measure would render an axis with no meaning.                                     |
+| A capped row window is stated on the tile              | Sorting and paging in the browser is quick, but a reader who can page through 200 rows will assume there are 200. The footer says how many matched.                                |
+| Formatting is resolved against the field's unit        | Currency over a unitless number is a presentation with no correct answer. Refusing it by name beats a plain number that a claims reader reads as dollars anyway, off by a hundred. |
+| Markdown is a parser, not a renderer of HTML           | The text widget is the one place configuration content reaches the DOM. Tokens to React elements has no HTML path at all, so there is no sanitiser to get wrong.                   |
+| Layout collisions are per widget invalid, not a reflow | A grid that reflows to fit a broken layout shows a dashboard nobody arranged, and the reader cannot tell which one they are looking at.                                            |
+| Recharts is lazy loaded behind a same size skeleton    | It is 380 KB of the bundle for a widget type a dashboard may not even use, and a skeleton that matches the chart keeps the layout still while it arrives.                          |
+| Skeletons instead of spinners                          | A spinner says only that something is happening. A skeleton in the shape of the widget says what is coming and keeps the page from jumping when it arrives.                        |
 
 ## Open questions
 

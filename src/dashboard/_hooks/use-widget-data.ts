@@ -1,17 +1,25 @@
+import { useCallback } from 'react'
+
 import { useQuery } from '@tanstack/react-query'
 
 import { MAX_DATA_ATTEMPTS, RETRY_BASE_DELAY_MS, RETRY_MAX_DELAY_MS } from '@/data/_constants'
 import { runDataQuery } from '@/data/_lib/client'
-import { isBindingDataError, isRetryableDataError, toDataError } from '@/data/_lib/data-error'
+import { describeDataError, isRetryableDataError, toDataError } from '@/data/_lib/data-error'
 import type { DataQuery, DataResult } from '@/data/_types'
 import { useAppStore } from '@/lib/store'
 
-import type { WidgetDataState } from '../_types'
+import { dataErrorToWidgetState } from '../_lib/widget-state'
+import type { WidgetState } from '../_types'
 
 type UseWidgetDataOptions = {
   dashboardId: string
   widgetId: string
   query: DataQuery
+}
+
+export type UseWidgetDataResult = {
+  state: WidgetState
+  refresh: () => void
 }
 
 /**
@@ -27,7 +35,7 @@ export function useWidgetData({
   dashboardId,
   widgetId,
   query,
-}: UseWidgetDataOptions): WidgetDataState {
+}: UseWidgetDataOptions): UseWidgetDataResult {
   const epoch = useAppStore((state) => state.epoch)
 
   const result = useQuery({
@@ -38,45 +46,49 @@ export function useWidgetData({
     retryDelay: (attempt) => Math.min(RETRY_BASE_DELAY_MS * 2 ** attempt, RETRY_MAX_DELAY_MS),
   })
 
-  const isRefreshing = result.isFetching && result.data !== undefined
+  const { refetch } = result
+  const refresh = useCallback(() => {
+    void refetch()
+  }, [refetch])
+
+  const isRefreshing = result.isFetching
+  const attempt = Math.min(result.failureCount + 1, MAX_DATA_ATTEMPTS)
 
   if (result.data !== undefined && result.isError) {
     return {
-      kind: 'stale',
-      result: result.data,
-      fetchedAt: result.dataUpdatedAt,
-      failure: toDataError(result.error),
-      failedAt: result.errorUpdatedAt,
-      isRefreshing,
+      refresh,
+      state: {
+        kind: 'stale',
+        result: result.data,
+        fetchedAt: result.dataUpdatedAt,
+        failedAt: result.errorUpdatedAt,
+        reason: describeDataError(toDataError(result.error)),
+        attempt,
+        maxAttempts: MAX_DATA_ATTEMPTS,
+        isRefreshing,
+      },
     }
   }
 
   if (result.isError) {
-    const error = toDataError(result.error)
-
-    if (isBindingDataError(error)) return { kind: 'unresolvable-binding', error }
-
     return {
-      kind: 'error',
-      error,
-      attempt: result.failureCount,
-      maxAttempts: MAX_DATA_ATTEMPTS,
+      refresh,
+      state: dataErrorToWidgetState(toDataError(result.error), attempt, isRefreshing),
     }
   }
 
   if (result.data !== undefined) {
     if (isEmptyResult(result.data)) {
-      return { kind: 'empty', fetchedAt: result.dataUpdatedAt, isRefreshing }
+      return { refresh, state: { kind: 'empty', fetchedAt: result.dataUpdatedAt, isRefreshing } }
     }
 
-    return { kind: 'ok', result: result.data, fetchedAt: result.dataUpdatedAt, isRefreshing }
+    return {
+      refresh,
+      state: { kind: 'ok', result: result.data, fetchedAt: result.dataUpdatedAt, isRefreshing },
+    }
   }
 
-  return {
-    kind: 'loading',
-    attempt: result.failureCount + 1,
-    maxAttempts: MAX_DATA_ATTEMPTS,
-  }
+  return { refresh, state: { kind: 'loading', attempt, maxAttempts: MAX_DATA_ATTEMPTS } }
 }
 
 /**

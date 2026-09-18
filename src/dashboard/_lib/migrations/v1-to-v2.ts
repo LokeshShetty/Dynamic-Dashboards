@@ -2,8 +2,8 @@ import { isRecord, isString } from '@/lib/guards'
 
 import {
   DEFAULT_GRID_COLUMNS,
-  DEFAULT_LAYOUT_BY_KIND,
   DEFAULT_PAGE_SIZE,
+  DEFAULT_SIZE_BY_KIND,
   WIDGET_KINDS,
 } from '../../_constants'
 
@@ -34,9 +34,11 @@ export function migrateV1ToV2(input: unknown): unknown {
   return migrated
 }
 
-function defaultLayoutFor(type: unknown) {
+/** v2 sized widgets in spans and let them flow; v3 gives them coordinates. */
+function defaultSpanFor(type: unknown) {
   const kind = WIDGET_KINDS.find((candidate) => candidate === type)
-  return { ...DEFAULT_LAYOUT_BY_KIND[kind ?? 'text'] }
+  const size = DEFAULT_SIZE_BY_KIND[kind ?? 'text']
+  return { colSpan: size.w, rowSpan: size.h }
 }
 
 function migrateWidget(widget: unknown): unknown {
@@ -45,7 +47,7 @@ function migrateWidget(widget: unknown): unknown {
   const base = {
     id: widget.id,
     title: widget.title,
-    layout: defaultLayoutFor(widget.type),
+    layout: defaultSpanFor(widget.type),
   }
 
   switch (widget.type) {

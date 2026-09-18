@@ -73,37 +73,37 @@ const ORGANIZATION_SUFFIXES = [
 ]
 
 const CLAIMS_FIELDS: DatasetField[] = [
-  { name: 'claim_id', type: 'text', nullable: false },
-  { name: 'provider_npi', type: 'text', nullable: false },
-  { name: 'payer', type: 'text', nullable: false },
-  { name: 'procedure_code', type: 'text', nullable: false },
-  { name: 'status', type: 'text', nullable: false },
-  { name: 'amount_cents', type: 'number', nullable: false },
-  { name: 'line_items', type: 'number', nullable: false },
-  { name: 'submitted_at', type: 'date', nullable: false },
-  { name: 'paid_at', type: 'date', nullable: true },
-  { name: 'denial_reason', type: 'text', nullable: true },
-  { name: 'is_resubmission', type: 'boolean', nullable: false },
+  { name: 'claim_id', type: 'text', nullable: false, unit: null },
+  { name: 'provider_npi', type: 'text', nullable: false, unit: null },
+  { name: 'payer', type: 'text', nullable: false, unit: null },
+  { name: 'procedure_code', type: 'text', nullable: false, unit: null },
+  { name: 'status', type: 'text', nullable: false, unit: null },
+  { name: 'amount_cents', type: 'number', nullable: false, unit: 'cents' },
+  { name: 'line_items', type: 'number', nullable: false, unit: null },
+  { name: 'submitted_at', type: 'date', nullable: false, unit: null },
+  { name: 'paid_at', type: 'date', nullable: true, unit: null },
+  { name: 'denial_reason', type: 'text', nullable: true, unit: null },
+  { name: 'is_resubmission', type: 'boolean', nullable: false, unit: null },
 ]
 
 const PROVIDERS_FIELDS: DatasetField[] = [
-  { name: 'provider_npi', type: 'text', nullable: false },
-  { name: 'organization', type: 'text', nullable: false },
-  { name: 'specialty', type: 'text', nullable: false },
-  { name: 'state', type: 'text', nullable: false },
-  { name: 'network_status', type: 'text', nullable: false },
-  { name: 'panel_size', type: 'number', nullable: false },
-  { name: 'credentialed_at', type: 'date', nullable: true },
+  { name: 'provider_npi', type: 'text', nullable: false, unit: null },
+  { name: 'organization', type: 'text', nullable: false, unit: null },
+  { name: 'specialty', type: 'text', nullable: false, unit: null },
+  { name: 'state', type: 'text', nullable: false, unit: null },
+  { name: 'network_status', type: 'text', nullable: false, unit: null },
+  { name: 'panel_size', type: 'number', nullable: false, unit: null },
+  { name: 'credentialed_at', type: 'date', nullable: true, unit: null },
 ]
 
 const APPLICATIONS_FIELDS: DatasetField[] = [
-  { name: 'application_id', type: 'text', nullable: false },
-  { name: 'provider_npi', type: 'text', nullable: false },
-  { name: 'status', type: 'text', nullable: false },
-  { name: 'assigned_queue', type: 'text', nullable: false },
-  { name: 'submitted_at', type: 'date', nullable: false },
-  { name: 'decided_at', type: 'date', nullable: true },
-  { name: 'days_in_queue', type: 'number', nullable: false },
+  { name: 'application_id', type: 'text', nullable: false, unit: null },
+  { name: 'provider_npi', type: 'text', nullable: false, unit: null },
+  { name: 'status', type: 'text', nullable: false, unit: null },
+  { name: 'assigned_queue', type: 'text', nullable: false, unit: null },
+  { name: 'submitted_at', type: 'date', nullable: false, unit: null },
+  { name: 'decided_at', type: 'date', nullable: true, unit: null },
+  { name: 'days_in_queue', type: 'number', nullable: false, unit: 'days' },
 ]
 
 export type Dataset = {
