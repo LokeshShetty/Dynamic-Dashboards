@@ -298,6 +298,9 @@ as `widget.render.crashed`, and every other widget on the dashboard carries on.
   in the browser over a capped window of rows; the footer says how many rows matched in total, so
   a capped window is never mistaken for the whole result. A configured sort field that has
   disappeared leaves the rows in their natural order and says so rather than implying an order.
+  The table is **not virtualised, on purpose**: it paginates, so between 8 and 100 rows are in
+  the DOM at a time and there is nothing for a virtualiser to save. Virtualisation starts paying
+  for itself in the thousands of rendered rows, which this widget cannot reach while it pages.
 - **Chart.** Recharts is lazy loaded behind a skeleton of the same size, so the 380 KB it costs
   only arrives when a chart is actually on screen. A numeric x axis is refused, because plotting
   numbers as categories invents an ordering; a non numeric y is refused, because there is nothing
@@ -810,6 +813,19 @@ dismiss button.
 | An invalid filter is dropped rather than fatal                 | Reversing a phase 2 decision: one mistyped filter kind costing every widget on the dashboard is a worse failure than the unfiltered data the original rule avoided. |
 | Bidi controls are stripped and text is isolated in bdi         | A right to left override in a title rearranges the line around it, so a widget can be made to read as something it is not, with no script involved at all.          |
 | The prototype check runs after the whole corpus                | Pollution is stateful: it is not enough for each file to be rejected, the process has to be clean once all of them have been through it.                            |
+
+## Known limits
+
+Things that are deliberate rather than unfinished, and what each one would take to lift.
+
+| Limit                                                  | Why it is here                                                                                                                                     | What lifting it needs                                                                                                 |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| A table sees the first 200 matching rows               | Sorting and paging happen in the browser, so the window has to be bounded. The footer states the total, so the cap is visible rather than implied. | Paging at the data layer: the table asks for the page it is on, and each page is its own request with its own states. |
+| The table is not virtualised                           | It paginates, so 8 to 100 rows are in the DOM. A virtualiser would add a dependency and a scroll container to save nothing.                        | Only worth it alongside dropping pagination for one long list.                                                        |
+| History is capped at 30 revisions per dashboard        | localStorage is a few megabytes for the whole origin.                                                                                              | A backend, where history is not competing with everything else in the browser.                                        |
+| Sharing works within one browser                       | localStorage is per browser and per origin.                                                                                                        | A REST implementation of the store interface, which is one file.                                                      |
+| Charts cap at 8 series when grouping                   | More lines than that stop being readable, and a chart that cannot be read is not showing the truth either.                                         | Nothing technical; it is a readability decision.                                                                      |
+| The demo world is generated from a fixed seed and date | Two reviewers should see the same numbers, and the shipped date filters should keep matching data.                                                 | Generating relative to now, at the cost of reproducibility.                                                           |
 
 ## Open questions
 
