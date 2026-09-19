@@ -275,8 +275,12 @@ empty rectangle: icon, state, the reason in the reader's words, a way to act on 
 widget's own configuration, centred in the space the data would have filled. These states are
 the product here, so they are composed like it.
 
-Every tile also carries a **Show configuration** disclosure, including tiles that failed before
-a widget existed: the raw entry is kept from the loader and printed as it was written.
+Every tile can show the configuration it came from, including tiles that failed before a widget
+existed: the raw entry is kept from the loader and printed as it was written. On a tile that is
+showing data it sits behind an information button beside refresh, so the configuration is one
+click away rather than a row of chrome under every widget; on a tile that cannot show data it
+stays inside the failure panel, next to the reason it is there. Same view, same text, and the
+same behaviour whether the dashboard is being read or edited.
 
 ### The crash net
 

@@ -70,19 +70,18 @@ export function DashboardTransfer({ dashboardId, config, onImported }: Props) {
         Export
       </Button>
 
+      <Button size="sm" onClick={() => fileRef.current?.click()}>
+        <Upload aria-hidden="true" className="size-3" />
+        Import
+      </Button>
+
       <Button
         size="sm"
-        variant="ghost"
         title="A small valid configuration you can import and edit"
         onClick={() => download(sampleConfig, 'sample-dashboard.json')}
       >
         <FileJson aria-hidden="true" className="size-3" />
         Sample
-      </Button>
-
-      <Button size="sm" onClick={() => fileRef.current?.click()}>
-        <Upload aria-hidden="true" className="size-3" />
-        Import
       </Button>
 
       <input

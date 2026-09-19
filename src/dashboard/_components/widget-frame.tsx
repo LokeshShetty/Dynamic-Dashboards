@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 
 import {
   AlertTriangle,
@@ -7,6 +7,7 @@ import {
   FilterX,
   History,
   Inbox,
+  Info,
   RefreshCw,
   Unlink,
 } from 'lucide-react'
@@ -61,6 +62,10 @@ export function WidgetFrame<TResult>({
 }: Props<TResult>) {
   const isTakenOver = takesOverTile(state)
 
+  // On a tile that is showing data, the configuration is one click away rather than a row of
+  // chrome under every widget. A tile that cannot show data keeps it inside its own panel.
+  const [showsConfig, setShowsConfig] = useState(false)
+
   return (
     <section
       aria-label={title}
@@ -85,18 +90,38 @@ export function WidgetFrame<TResult>({
             ) : null}
           </span>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          aria-label={`Refresh ${title}`}
-          onClick={onRefresh}
-          disabled={isBusy(state)}
-        >
-          <RefreshCw aria-hidden="true" className="size-4" />
-        </Button>
+        <span className="flex shrink-0 items-center">
+          {isTakenOver ? null : (
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label={`${showsConfig ? 'Hide' : 'Show'} the configuration for ${title}`}
+              aria-pressed={showsConfig}
+              onClick={() => setShowsConfig((shown: boolean) => !shown)}
+            >
+              <Info aria-hidden="true" className="size-4" />
+            </Button>
+          )}
+
+          <Button
+            variant="ghost"
+            size="sm"
+            aria-label={`Refresh ${title}`}
+            onClick={onRefresh}
+            disabled={isBusy(state)}
+          >
+            <RefreshCw aria-hidden="true" className="size-4" />
+          </Button>
+        </span>
       </header>
 
       <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto">
+        {showsConfig && !isTakenOver ? (
+          <pre className="border-border bg-surface-muted text-fg-muted min-h-0 flex-1 overflow-auto rounded-md border p-2 text-xs">
+            {configText}
+          </pre>
+        ) : null}
+
         <WidgetErrorBoundary widgetId={widgetId} onRetry={onRefresh}>
           {state.kind === 'invalid' ? (
             <WidgetStatePanel
@@ -153,9 +178,9 @@ export function WidgetFrame<TResult>({
             />
           ) : null}
 
-          {state.kind === 'loading' ? skeleton : null}
+          {state.kind === 'loading' && !showsConfig ? skeleton : null}
 
-          {state.kind === 'stale' ? (
+          {state.kind === 'stale' && !showsConfig ? (
             <>
               <WidgetStateNotice
                 tone="warning"
@@ -170,11 +195,9 @@ export function WidgetFrame<TResult>({
             </>
           ) : null}
 
-          {state.kind === 'ok' ? children(state.result) : null}
+          {state.kind === 'ok' && !showsConfig ? children(state.result) : null}
         </WidgetErrorBoundary>
       </div>
-
-      {isTakenOver ? null : <WidgetConfigDisclosure configText={configText} className="shrink-0" />}
     </section>
   )
 }

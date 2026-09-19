@@ -116,13 +116,13 @@ export function LoadedDashboard({
             />
           )}
           {isEditing || readOnly ? null : (
-            <Button onClick={enterEditMode}>
-              <Pencil aria-hidden="true" className="size-4" />
+            <Button size="sm" onClick={enterEditMode}>
+              <Pencil aria-hidden="true" className="size-3" />
               Edit dashboard
             </Button>
           )}
-          <Button onClick={refreshAll}>
-            <RefreshCw aria-hidden="true" className="size-4" />
+          <Button size="sm" onClick={refreshAll}>
+            <RefreshCw aria-hidden="true" className="size-3" />
             Refresh all
           </Button>
         </div>
