@@ -1,5 +1,7 @@
 import { useEffect, useId, useState } from 'react'
 
+import { useDebouncedValue } from '@/hooks/use-debounced-value'
+
 import type { DashboardFilter } from '../../_lib/config.schema'
 import type { FilterValue } from '../../_lib/to-data-query'
 import { FILTER_CONTROL_CLASS, FilterField } from './filter-field'
@@ -14,28 +16,27 @@ type Props = {
 
 /**
  * Typing is debounced before it becomes a filter value, not just before it reaches the URL:
- * every keystroke that reached the query key would be a request per character, and every one
- * of them would cancel the last.
+ * every keystroke that reached the query key would be a request per character, and every one of
+ * them would cancel the last. The field itself stays immediate, so it never feels laggy.
  */
 export function SearchFilterControl({ filter, value, onChange }: Props) {
   const controlId = useId()
-  const [typed, setTyped] = useState(value ?? '')
-  const [lastValue, setLastValue] = useState(value)
+  const applied = value ?? ''
+
+  const [typed, setTyped] = useState(applied)
+  const [lastApplied, setLastApplied] = useState(applied)
+  const settled = useDebouncedValue(typed, DEBOUNCE_MS)
 
   // The URL can change without the reader typing: a reset, a shared link, the back button.
-  // Adjusting during render is React's own pattern for this, and avoids a second pass.
-  if (value !== lastValue) {
-    setLastValue(value)
-    setTyped(value ?? '')
+  if (applied !== lastApplied) {
+    setLastApplied(applied)
+    setTyped(applied)
   }
 
   useEffect(() => {
-    const current = value ?? ''
-    if (typed === current) return
-
-    const timer = setTimeout(() => onChange(typed === '' ? null : typed), DEBOUNCE_MS)
-    return () => clearTimeout(timer)
-  }, [typed, value, onChange])
+    if (settled === applied) return
+    onChange(settled === '' ? null : settled)
+  }, [applied, onChange, settled])
 
   return (
     <FilterField label={filter.label} controlId={controlId}>

@@ -8,8 +8,6 @@ import { cn } from '@/lib/utils'
 
 import { Button } from './button'
 
-/** Lists shorter than this are quicker to read than to search. */
-const SEARCHABLE_FROM = 8
 const SEARCH_DEBOUNCE_MS = 200
 
 export type SelectOption = {
@@ -41,8 +39,10 @@ type Props = {
  * one value is being chosen, checkboxes when several are, which keeps the keyboard behaviour the
  * browser already provides.
  *
- * The search filters on a debounced term, so typing stays smooth over a long list, while the
- * field itself updates on every keystroke.
+ * Every list gets the search box, however short it looks today: the values come from data, and a
+ * field with four values this week can have forty next week. Filtering runs on a debounced term,
+ * so typing stays smooth over a few hundred values while the field itself updates on every
+ * keystroke.
  */
 export function SearchableSelect({ id, label, options, selection, emptyLabel, className }: Props) {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -104,16 +104,14 @@ export function SearchableSelect({ id, label, options, selection, emptyLabel, cl
 
       {isOpen ? (
         <div className="border-border bg-surface-raised absolute z-30 mt-1 flex w-72 max-w-[90vw] flex-col gap-2 rounded-md border p-2 shadow-xl">
-          {options.length >= SEARCHABLE_FROM ? (
-            <input
-              type="search"
-              aria-label={`Search ${label.toLowerCase()}`}
-              placeholder="Search"
-              className="border-border bg-surface-raised text-fg h-8 w-full rounded-md border px-2 text-xs"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-          ) : null}
+          <input
+            type="search"
+            aria-label={`Search ${label.toLowerCase()}`}
+            placeholder="Search"
+            className="border-border bg-surface-raised text-fg h-8 w-full rounded-md border px-2 text-xs"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
 
           <ul className="flex max-h-56 flex-col overflow-auto">
             {matching.map((option) => (
