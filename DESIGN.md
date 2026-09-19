@@ -590,19 +590,47 @@ tile will land, and the arrow keys do the same two jobs from the keyboard: arrow
 arrows resize, while focus is anywhere in the tile. The toolbar above each tile is left with the
 four things that have no gesture: rename, edit, duplicate, remove.
 
-`react-grid-layout` does the dragging and resizing. It is the one dependency in the project that
-was taken on for a feature rather than for tooling, and the reason is narrow: it is the only part
-of this system where the browser's own primitives do not reach. A pointer drag that snaps to
-cells is a weekend of edge cases (capture, touch, scroll, boundaries), and a resize grip with per
-widget minimum sizes is another. dnd-kit was the obvious alternative and was rejected on the
-facts: it does no resizing at all and no grid snapping, so it would have removed neither piece.
+### The one approved feature dependency
+
+`react-grid-layout` does the dragging and resizing. It is the only dependency in the project
+taken on for a feature rather than for tooling, and it is approved in CLAUDE.md for three things
+the browser's own primitives do not give:
+
+- a pointer drag that snaps to grid cells, with a placeholder showing where the tile will land;
+- a resize grip with per widget minimum sizes;
+- **push and compact semantics**: growing a tile moves the ones below it down rather than landing
+  on top of them, and dragging is not bounded by the current content height, so a tile can be
+  taken into new space below the last row.
+
+dnd-kit was the obvious alternative and was rejected on the facts: it does no resizing at all and
+no grid snapping, so it would have removed neither piece of the work.
+
+### Arranging without a pointer
+
+**The library's drag handle and resize grip are pointer only.** They are not the accessible path
+and were never meant to be. The accessible path is the toolbar arrows, which appear on the tile
+being worked on, and the arrow keys, which do the same two jobs while focus is anywhere in the
+tile: arrows move, shift and arrows resize. Both still work with the library in place, and both
+are verified against the shipped demo at `/d/demo?edit=1`.
+
+The keyboard and the pointer differ in one way, deliberately. A drag pushes the tiles it lands on
+out of the way, because that is what a pointer gesture means. A keyboard step does not push: two
+tiles of the same size trade places, a smaller one is stepped past to the first free space, and
+the edge of the grid is silent. Pushing on a single key press would rearrange a dashboard several
+tiles away from the one the reader is holding, with no way to see it happen.
 
 **What the library is not allowed to decide.** It moves tiles; it does not decide what a valid
-layout is. Compaction is switched off, so nothing is tidied behind the reader's back, and every
-arrangement it produces is checked against the loader's own placement rules before it reaches the
-draft. An arrangement that would not load is not applied, and the grid snaps back to the last one
-that would. Each widget kind carries a minimum size, so a table cannot be dragged down to a sliver
-of itself.
+layout is. Every arrangement it produces is checked against the loader's own placement rules
+before it reaches the draft, and one that would not load is not applied, so the grid snaps back to
+the last arrangement that would. Layouts are committed when a drag or a resize finishes, never
+while the grid is settling, so opening the editor cannot mark a draft dirty on its own. Each
+widget kind carries a minimum size, so a table cannot be dragged down to a sliver of itself.
+
+This matters most where the two disagree. `hostile-configs/overlapping-layout.json` contains two
+widgets in the same cells: the library will happily resolve that on screen, but the verdict comes
+from the loader, so the later widget still renders as an invalid tile whose reason names what it
+sits on top of. What the grid does with a broken layout never changes what the dashboard says
+about it.
 
 ## UI primitives
 

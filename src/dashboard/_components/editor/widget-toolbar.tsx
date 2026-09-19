@@ -1,4 +1,15 @@
-import { Copy, GripVertical, Pencil, Trash2, Type } from 'lucide-react'
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  Copy,
+  GripVertical,
+  Maximize2,
+  Pencil,
+  Trash2,
+  Type,
+} from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 
@@ -6,6 +17,10 @@ type Props = {
   title: string
   /** Read out with the drag handle, so a keyboard user knows where the tile currently sits. */
   position: string
+  /** Moving and resizing by button appear on the tile being worked on, not on all of them. */
+  isSelected: boolean
+  onMove: (dx: number, dy: number) => void
+  onResize: (dw: number, dh: number) => void
   onRename: () => void
   onEdit: () => void
   onDuplicate: () => void
@@ -13,11 +28,36 @@ type Props = {
 }
 
 /**
- * Five controls, not thirteen. Moving and resizing are done by dragging the handle and the grip
- * on the tile, or with the arrow keys, so the toolbar is left with the things that have no
- * gesture: rename, edit, duplicate, remove.
+ * The library's drag handle and resize grip are pointer only. These buttons, and the arrow keys
+ * they mirror, are the path that does not need a pointer, so they are not decoration: they are
+ * how the grid is arranged without a mouse. They appear on the tile being worked on, because
+ * thirteen buttons on every tile is a wall rather than an editor.
  */
-export function WidgetToolbar({ title, position, onRename, onEdit, onDuplicate, onRemove }: Props) {
+const MOVES = [
+  { label: 'left', icon: ArrowLeft, dx: -1, dy: 0 },
+  { label: 'right', icon: ArrowRight, dx: 1, dy: 0 },
+  { label: 'up', icon: ArrowUp, dx: 0, dy: -1 },
+  { label: 'down', icon: ArrowDown, dx: 0, dy: 1 },
+] as const
+
+const RESIZES = [
+  { label: 'narrower', icon: ArrowLeft, dw: -1, dh: 0, className: 'size-3 opacity-70' },
+  { label: 'wider', icon: ArrowRight, dw: 1, dh: 0, className: 'size-3 opacity-70' },
+  { label: 'shorter', icon: ArrowUp, dw: 0, dh: -1, className: 'size-3 opacity-70' },
+  { label: 'taller', icon: Maximize2, dw: 0, dh: 1, className: 'size-3 opacity-70' },
+] as const
+
+export function WidgetToolbar({
+  title,
+  position,
+  isSelected,
+  onMove,
+  onResize,
+  onRename,
+  onEdit,
+  onDuplicate,
+  onRemove,
+}: Props) {
   return (
     <div className="border-border bg-surface-raised flex items-center gap-0.5 rounded-md border p-0.5 shadow-sm">
       {/* The grid library drags by this class; the arrow keys do the same job from the tile. */}
@@ -42,6 +82,38 @@ export function WidgetToolbar({ title, position, onRename, onEdit, onDuplicate, 
       <Button variant="ghost" size="sm" aria-label={`Remove ${title}`} onClick={onRemove}>
         <Trash2 aria-hidden="true" className="text-danger size-3" />
       </Button>
+
+      {isSelected ? (
+        <>
+          <span className="bg-border mx-0.5 h-4 w-px" aria-hidden="true" />
+
+          {MOVES.map((move) => (
+            <Button
+              key={move.label}
+              variant="ghost"
+              size="sm"
+              aria-label={`Move ${title} ${move.label}`}
+              onClick={() => onMove(move.dx, move.dy)}
+            >
+              <move.icon aria-hidden="true" className="size-3" />
+            </Button>
+          ))}
+
+          <span className="bg-border mx-0.5 h-4 w-px" aria-hidden="true" />
+
+          {RESIZES.map((resize) => (
+            <Button
+              key={resize.label}
+              variant="ghost"
+              size="sm"
+              aria-label={`Make ${title} ${resize.label}`}
+              onClick={() => onResize(resize.dw, resize.dh)}
+            >
+              <resize.icon aria-hidden="true" className={resize.className} />
+            </Button>
+          ))}
+        </>
+      ) : null}
     </div>
   )
 }

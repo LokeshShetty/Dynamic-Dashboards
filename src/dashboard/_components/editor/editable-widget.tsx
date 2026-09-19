@@ -102,6 +102,9 @@ export function EditableWidget({
         <WidgetToolbar
           title={title}
           position={describedPosition}
+          isSelected={isSelected}
+          onMove={actions.onMove}
+          onResize={actions.onResize}
           onRename={actions.onRename}
           onEdit={actions.onEdit}
           onDuplicate={actions.onDuplicate}

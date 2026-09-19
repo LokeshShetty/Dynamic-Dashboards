@@ -77,7 +77,7 @@ export function LoadedDashboard({
   }
 
   return (
-    <div className="mx-auto flex max-w-[110rem] flex-col gap-4 p-4 md:p-6">
+    <div className="mx-auto flex max-w-[110rem] flex-col gap-4 p-4 pb-32 md:p-6 md:pb-32">
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h1 className="text-fg text-xl font-semibold">

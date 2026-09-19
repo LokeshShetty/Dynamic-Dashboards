@@ -47,7 +47,7 @@ export const COLUMN_ALIGNMENTS = ['left', 'right'] as const
 /** Presentation defaults a migration may supply. It may never supply a data binding. */
 export const DEFAULT_SIZE_BY_KIND = {
   metric: { w: 3, h: 1 },
-  chart: { w: 6, h: 2 },
+  chart: { w: 6, h: 3 },
   table: { w: 12, h: 2 },
   text: { w: 12, h: 1 },
 } as const

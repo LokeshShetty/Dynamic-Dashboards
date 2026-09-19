@@ -50,13 +50,17 @@ const TOOLTIP_STYLE = {
 
 const LEGEND_STYLE = { fontSize: 11, color: 'var(--fg-muted)' }
 
+const CHART_MARGIN = { top: 8, right: 8, bottom: 0, left: 0 }
+
 function colorAt(index: number) {
   return SERIES_COLORS[index % SERIES_COLORS.length]
 }
 
 export function ChartCanvas({ chartType, points, series, stacked, format, formatTick }: Props) {
   const rows = points.map((point) => ({ x: point.x, ...point.values }))
-  const isCategorical = chartType === 'bar' && series.length === 1
+
+  /** One series needs no legend: the axis already names what each bar or line is. */
+  const showsLegend = series.length > 1
 
   const shared = (
     <>
@@ -74,62 +78,40 @@ export function ChartCanvas({ chartType, points, series, stacked, format, format
         contentStyle={TOOLTIP_STYLE}
         cursor={{ fill: 'var(--surface-muted)', fillOpacity: 0.5 }}
       />
+      {showsLegend ? <Legend wrapperStyle={LEGEND_STYLE} /> : null}
     </>
   )
 
   if (chartType === 'bar') {
     return (
-      <div className="flex h-full min-h-0 flex-col gap-1">
-        <div className="min-h-0 flex-1">
-          <ResponsiveContainer width="100%" height="100%" minHeight={140}>
-            <BarChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-              {shared}
-              {isCategorical ? null : <Legend wrapperStyle={LEGEND_STYLE} />}
-
-              {series.map((entry, index) => (
-                <Bar
-                  key={entry.key}
-                  dataKey={entry.key}
-                  name={entry.label}
-                  stackId={stacked ? 'stack' : undefined}
-                  fill={colorAt(index)}
-                >
-                  {isCategorical
-                    ? rows.map((row, rowIndex) => (
-                        <Cell key={String(row.x)} fill={colorAt(rowIndex)} />
-                      ))
-                    : null}
-                </Bar>
-              ))}
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* One bar per category reads as a set of categories, so the legend names them. */}
-        {isCategorical ? (
-          <ul className="text-fg-muted flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-            {rows.map((row, index) => (
-              <li key={String(row.x)} className="inline-flex items-center gap-1">
-                <span
-                  aria-hidden="true"
-                  className="size-2 rounded-xs"
-                  style={{ background: colorAt(index) }}
-                />
-                {String(row.x)}
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </div>
+      <ResponsiveContainer width="100%" height="100%" minHeight={80}>
+        <BarChart data={rows} margin={CHART_MARGIN}>
+          {shared}
+          {series.map((entry, index) => (
+            <Bar
+              key={entry.key}
+              dataKey={entry.key}
+              name={entry.label}
+              stackId={stacked ? 'stack' : undefined}
+              fill={colorAt(index)}
+            >
+              {/* With one series the bars are the categories, so each takes its own colour. */}
+              {showsLegend
+                ? null
+                : rows.map((row, rowIndex) => (
+                    <Cell key={String(row.x)} fill={colorAt(rowIndex)} />
+                  ))}
+            </Bar>
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
     )
   }
 
   return (
     <ResponsiveContainer width="100%" height="100%" minHeight={80}>
-      <LineChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+      <LineChart data={rows} margin={CHART_MARGIN}>
         {shared}
-        {series.length > 1 ? <Legend wrapperStyle={LEGEND_STYLE} /> : null}
-
         {series.map((entry, index) => (
           <Line
             key={entry.key}

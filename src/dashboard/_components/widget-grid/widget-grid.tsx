@@ -1,6 +1,6 @@
 import { type ReactNode } from 'react'
 
-import { GridLayout, noCompactor, useContainerWidth, type Layout } from 'react-grid-layout'
+import { GridLayout, useContainerWidth, verticalCompactor, type Layout } from 'react-grid-layout'
 
 import { cn } from '@/lib/utils'
 
@@ -25,7 +25,8 @@ type Props = {
   columns: number
   placements: GridPlacement[]
   isEditable: boolean
-  onLayoutChange?: (layout: Layout) => void
+  /** Called when a drag or a resize finishes, never on the way in. */
+  onArranged?: (layout: Layout) => void
   children: ReactNode
   className?: string
 }
@@ -46,14 +47,14 @@ export function WidgetGrid({
   columns,
   placements,
   isEditable,
-  onLayoutChange,
+  onArranged,
   children,
   className,
 }: Props) {
   const { width, containerRef } = useContainerWidth()
 
   return (
-    <div ref={containerRef} className={cn('w-full', className)}>
+    <div ref={containerRef} className={cn('w-full', isEditable ? 'pb-40' : '', className)}>
       <GridLayout
         width={width > 0 ? width : GRID_FALLBACK_WIDTH}
         layout={placements.map(({ key, ...rect }) => ({ i: key, ...rect }))}
@@ -63,10 +64,11 @@ export function WidgetGrid({
           margin: GRID_MARGIN,
           containerPadding: [0, 0],
         }}
-        dragConfig={{ enabled: isEditable, bounded: true, handle: '.widget-drag-handle' }}
+        dragConfig={{ enabled: isEditable, bounded: false, handle: '.widget-drag-handle' }}
         resizeConfig={{ enabled: isEditable, handles: isEditable ? ['se'] : [] }}
-        compactor={noCompactor}
-        onLayoutChange={onLayoutChange}
+        compactor={verticalCompactor}
+        onDragStop={(layout) => onArranged?.(layout)}
+        onResizeStop={(layout) => onArranged?.(layout)}
       >
         {children}
       </GridLayout>

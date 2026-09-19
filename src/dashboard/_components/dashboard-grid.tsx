@@ -15,7 +15,7 @@ type Props = {
   /** Edit mode wraps each tile in its own chrome; reading mode wraps nothing. */
   wrapTile?: (slot: WidgetSlot, tile: ReactNode) => ReactNode
   isEditable?: boolean
-  onLayoutChange?: (layout: Layout) => void
+  onArranged?: (layout: Layout) => void
 }
 
 export function DashboardGrid({
@@ -24,14 +24,14 @@ export function DashboardGrid({
   filters,
   wrapTile,
   isEditable = false,
-  onLayoutChange,
+  onArranged,
 }: Props) {
   return (
     <WidgetGrid
       columns={shell.layout.columns}
       placements={toGridPlacements(slots)}
       isEditable={isEditable}
-      onLayoutChange={onLayoutChange}
+      onArranged={onArranged}
     >
       {slots.map((slot) => {
         const tile = (

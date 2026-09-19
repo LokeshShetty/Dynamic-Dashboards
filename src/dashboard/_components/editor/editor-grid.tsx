@@ -123,7 +123,7 @@ export function EditorGrid({ dashboardId, filters, onLeave, onReloadSaved }: Pro
         slots={preview.slots}
         filters={filters}
         isEditable
-        onLayoutChange={(layout: Layout) => {
+        onArranged={(layout: Layout) => {
           editor.applyLayouts(
             layout.flatMap((item) => {
               const index = indexFromGridKey(item.i)
