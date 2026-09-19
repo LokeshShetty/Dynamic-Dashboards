@@ -60,6 +60,17 @@ export const GRID_MARGIN: readonly [number, number] = [12, 12]
 export const GRID_FALLBACK_WIDTH = 1200
 export const DEFAULT_PAGE_SIZE = 10
 
+/** How an aggregate reads in a sentence, rather than how it is written in a configuration. */
+export const AGGREGATE_LABELS = {
+  sum: 'Total',
+  avg: 'Average',
+  min: 'Lowest',
+  max: 'Highest',
+  count: 'Count',
+  first: 'First',
+  last: 'Last',
+} as const
+
 export type WidgetKind = (typeof WIDGET_KINDS)[number]
 export type Aggregate = (typeof AGGREGATES)[number]
 export type FilterKind = (typeof FILTER_KINDS)[number]

@@ -1,5 +1,7 @@
 import type { DataResult } from '@/data/_types'
+import { humanizeFieldName } from '@/lib/text'
 
+import { AGGREGATE_LABELS } from '../../_constants'
 import { useWidgetData } from '../../_hooks/use-widget-data'
 import type { MetricWidget } from '../../_lib/config.schema'
 import { unappliedFiltersOf } from '../../_lib/filter-notices'
@@ -53,8 +55,9 @@ function MetricValue({ result, widget }: { result: DataResult; widget: MetricWid
     <div className="flex flex-col gap-1">
       <p className="text-fg text-3xl font-semibold tabular-nums">{text}</p>
       <p className="text-fg-muted text-xs">
-        {widget.value.aggregate} of {widget.value.field} over {result.matchedRows.toLocaleString()}{' '}
-        rows
+        {AGGREGATE_LABELS[widget.value.aggregate]} of{' '}
+        {humanizeFieldName(result.field.name, result.field.unit)} over{' '}
+        {result.matchedRows.toLocaleString()} rows
       </p>
     </div>
   )

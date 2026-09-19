@@ -1,10 +1,11 @@
 import { useRef } from 'react'
 
-import { Download, Upload } from 'lucide-react'
+import { Download, FileJson, Upload } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/lib/store'
 
+import sampleConfig from '../_fixtures/sample-import.json?raw'
 import { loadDashboardConfig } from '../_lib/load-config'
 
 type Props = {
@@ -17,19 +18,22 @@ type Props = {
  * Export writes out exactly what is stored. Import treats the file as hostile input: it goes
  * through the same loader as anything else and lands as a draft to review, never straight into
  * storage, so a file from somewhere else cannot overwrite a dashboard without being looked at.
+ *
+ * The sample exists so import can be tried without first having to write a configuration by
+ * hand, or having to guess the format from the documentation.
  */
 export function DashboardTransfer({ dashboardId, config, onImported }: Props) {
   const fileRef = useRef<HTMLInputElement>(null)
   const pushToast = useAppStore((state) => state.pushToast)
   const replaceDraft = useAppStore((state) => state.replaceDraft)
 
-  const exportConfig = () => {
-    const blob = new Blob([config], { type: 'application/json' })
+  const download = (text: string, filename: string) => {
+    const blob = new Blob([text], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const anchor = document.createElement('a')
 
     anchor.href = url
-    anchor.download = `${dashboardId}.json`
+    anchor.download = filename
     anchor.click()
     URL.revokeObjectURL(url)
   }
@@ -61,9 +65,19 @@ export function DashboardTransfer({ dashboardId, config, onImported }: Props) {
 
   return (
     <span className="flex items-center gap-1">
-      <Button size="sm" onClick={exportConfig}>
+      <Button size="sm" onClick={() => download(config, `${dashboardId}.json`)}>
         <Download aria-hidden="true" className="size-3" />
         Export
+      </Button>
+
+      <Button
+        size="sm"
+        variant="ghost"
+        title="A small valid configuration you can import and edit"
+        onClick={() => download(sampleConfig, 'sample-dashboard.json')}
+      >
+        <FileJson aria-hidden="true" className="size-3" />
+        Sample
       </Button>
 
       <Button size="sm" onClick={() => fileRef.current?.click()}>

@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 3,
+  "id": "imported-sample",
+  "title": "Imported sample",
+  "version": 1,
+  "dataset": "claims",
+  "layout": { "columns": 12 },
+  "filters": [
+    {
+      "id": "status",
+      "kind": "select",
+      "label": "Status",
+      "field": "status",
+      "options": [
+        { "value": "paid", "label": "Paid" },
+        { "value": "denied", "label": "Denied" }
+      ]
+    }
+  ],
+  "widgets": [
+    {
+      "id": "billed",
+      "kind": "metric",
+      "title": "Billed",
+      "layout": { "x": 0, "y": 0, "w": 4, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" },
+      "format": { "style": "currency", "currency": "USD", "decimals": 0 }
+    },
+    {
+      "id": "claims",
+      "kind": "metric",
+      "title": "Claims",
+      "layout": { "x": 4, "y": 0, "w": 4, "h": 1 },
+      "value": { "field": "claim_id", "aggregate": "count" }
+    },
+    {
+      "id": "by-payer",
+      "kind": "chart",
+      "title": "Claims by payer",
+      "layout": { "x": 0, "y": 1, "w": 8, "h": 3 },
+      "chartType": "bar",
+      "x": { "field": "payer" },
+      "series": [{ "field": "claim_id", "aggregate": "count" }]
+    },
+    {
+      "id": "how-to",
+      "kind": "text",
+      "title": "About this file",
+      "layout": { "x": 8, "y": 0, "w": 4, "h": 4 },
+      "body": "A small, valid configuration to import and edit.\n\n- **Import** loads it as an unsaved draft, so nothing is written until you save.\n- Change a binding to a field that does not exist to see a tile report it.\n- The hostile files in `hostile-configs/` do the same thing on purpose.",
+      "tone": "note"
+    }
+  ]
+}

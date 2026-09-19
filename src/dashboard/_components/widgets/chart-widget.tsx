@@ -1,7 +1,9 @@
 import { lazy, Suspense } from 'react'
 
 import type { DataResult } from '@/data/_types'
+import { humanizeFieldName } from '@/lib/text'
 
+import { AGGREGATE_LABELS } from '../../_constants'
 import { useWidgetData } from '../../_hooks/use-widget-data'
 import type { ChartWidget } from '../../_lib/config.schema'
 import { unappliedFiltersOf } from '../../_lib/filter-notices'
@@ -46,6 +48,13 @@ export function ChartWidgetTile({ dashboardId, dataset, widget, filters }: Props
       {(result) => {
         if (result.kind !== 'series') return null
 
+        const seriesLabel = (index: number) => {
+          const binding = widget.series[index] ?? widget.series[0]
+          const field = result.series[index]?.field ?? result.x
+          if (!binding) return humanizeFieldName(field.name, field.unit)
+          return `${AGGREGATE_LABELS[binding.aggregate]} of ${humanizeFieldName(field.name, field.unit)}`
+        }
+
         const measured = result.series[0]?.field ?? result.x
         const formatter = resolveFormatter(measured, widget.series[0]?.format)
         const tickFormatter = resolveFormatter(measured, widget.series[0]?.format, 'compact')
@@ -61,10 +70,7 @@ export function ChartWidgetTile({ dashboardId, dataset, widget, filters }: Props
                 formatTick={tickFormatter.ok ? tickFormatter.data : (value) => String(value ?? '')}
                 series={result.series.map((series, index) => ({
                   key: series.key,
-                  label:
-                    series.groupValue ??
-                    widget.series[index]?.label ??
-                    `${widget.series[index]?.aggregate ?? ''} ${series.field.name}`.trim(),
+                  label: series.groupValue ?? widget.series[index]?.label ?? seriesLabel(index),
                 }))}
               />
             </Suspense>

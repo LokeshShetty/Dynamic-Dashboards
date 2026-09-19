@@ -1,4 +1,5 @@
 import type { ResolvedColumn, ResolvedField } from '@/data/_types'
+import { humanizeFieldName } from '@/lib/text'
 
 import type { TableWidget } from './config.schema'
 import { formatFieldUnit, resolveFormatter, type ValueFormatter } from './format'
@@ -25,8 +26,10 @@ export function toColumnViews(
   resolved: ReadonlyArray<ResolvedColumn>,
 ): ColumnView[] {
   return configured.map((column, index) => {
-    const label = column.label ?? column.field
     const match = resolved[index]
+    const label =
+      column.label ??
+      humanizeFieldName(column.field, match?.kind === 'resolved' ? match.field.unit : null)
 
     if (!match || match.kind === 'unresolved') {
       return {

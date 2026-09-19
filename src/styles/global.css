@@ -13,6 +13,25 @@
   :focus-visible {
     @apply outline-accent outline-2 outline-offset-2;
   }
+
+  /* Tailwind v4 resets buttons to the default cursor. Anything that acts on a click says so. */
+  button:not(:disabled),
+  summary,
+  [role='button']:not([aria-disabled='true']) {
+    @apply cursor-pointer;
+  }
+
+  button:disabled {
+    @apply cursor-not-allowed;
+  }
+
+  label:has(input[type='checkbox']),
+  label:has(input[type='radio']),
+  input[type='checkbox'],
+  input[type='radio'],
+  select:not(:disabled) {
+    @apply cursor-pointer;
+  }
 }
 
 /*

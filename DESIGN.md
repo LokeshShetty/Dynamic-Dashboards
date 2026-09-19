@@ -306,6 +306,20 @@ as `widget.render.crashed`, and every other widget on the dashboard carries on.
   anywhere and the grammar has no links or images, so there is nothing for a hostile
   configuration to smuggle a URL or a script through. `dangerouslySetInnerHTML` is banned by lint.
 
+### Names a reader recognises
+
+Column keys are how the data names things, not how people do. `avg of line_items over 86 rows` is
+the database talking; `Average of Line items over 86 rows` is the dashboard talking. Field names
+are humanised wherever they appear in prose: metric footnotes, table headings with no configured
+label, and chart series with no label of their own. Where a name carries its unit as a suffix and
+the unit is known, the suffix goes, because the formatter is already showing it: `amount_cents`
+formatted as currency reads as **Amount**.
+
+Two places keep the real keys on purpose. The **Show configuration** disclosure prints the widget
+exactly as it is stored, and failure messages name the field the configuration asked for, because
+both exist to be acted on: a reader fixing a binding needs the string that is actually in the
+file.
+
 ### Layout
 
 Widgets are placed on a 12 column grid by `layout { x, y, w, h }`. A widget that runs past the
