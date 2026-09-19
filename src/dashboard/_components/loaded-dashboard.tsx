@@ -43,7 +43,7 @@ export function LoadedDashboard({
   readOnly = false,
 }: Props) {
   const queryClient = useQueryClient()
-  const { values, activeCount, ignored, setValue, reset } = useFilterValues(filters)
+  const { values, activeCount, ignored, dismissIgnored, setValue, reset } = useFilterValues(filters)
   const { isEditing, enterEditMode, leaveEditMode } = useEditMode()
   const startDraft = useAppStore((state) => state.startDraft)
   const discardDraft = useAppStore((state) => state.discardDraft)
@@ -147,6 +147,7 @@ export function LoadedDashboard({
         ignored={ignored}
         onChange={setValue}
         onReset={reset}
+        onDismissIgnored={dismissIgnored}
       />
 
       {isEditing && !readOnly ? (

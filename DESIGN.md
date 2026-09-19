@@ -359,8 +359,9 @@ swapping would silently answer a question nobody asked. None of these paths can 
 
 Removing the parameter afterwards matters as much as reporting it. A URL that keeps a value the
 dashboard refused says one thing while the screen says another, and the next person to be sent
-that link inherits the confusion. The report stays on screen for the session; the link ends up
-describing what is actually in force.
+that link inherits the confusion. So the parameter goes and the report stays, until the reader
+does something about it: changing any filter, resetting them, or dismissing the notice clears it.
+A notice that outlives the problem it describes is one more thing on screen that is not true.
 
 Dates are committed when the field is left rather than on every keystroke. A date input reports a
 value after each one, so typing a year gives the year 2, then 20, then 202 on the way to 2026, and

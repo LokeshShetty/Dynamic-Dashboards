@@ -18,6 +18,8 @@ export type UseFilterValuesResult = {
   activeCount: number
   /** Parameters that did not survive validation, named so the bar can say what it ignored. */
   ignored: IgnoredParam[]
+  /** Clears that report, for the reader who has read it. */
+  dismissIgnored: () => void
   setValue: (filter: DashboardFilter, value: FilterValue) => void
   reset: () => void
 }
@@ -43,13 +45,21 @@ export function useFilterValues(filters: ReadonlyArray<DashboardFilter>): UseFil
    * A parameter that was ignored stays in the address bar saying one thing while the dashboard
    * shows another, and a reader who copies that link passes the confusion on. So it is removed
    * once it has been reported, and the report is kept here rather than in the URL: what was
-   * ignored is still on screen, and the link now describes what is actually in force.
+   * ignored is still on screen, and the link describes what is actually in force.
+   *
+   * The report is held until the reader does something about it, and no longer: changing any
+   * filter, resetting, or dismissing it clears it. A notice that outlives the problem it
+   * describes is just another thing on screen that is not true.
    */
-  const [reported, setReported] = useState<IgnoredParam[]>(ignored)
+  const signature = ignored.map((entry) => `${entry.params.join('+')}=${entry.value}`).join('|')
+  const [report, setReport] = useState({ signature, entries: ignored })
 
-  // Remembered during render, because the parameter is about to be taken out of the URL and the
-  // reader still needs to be told what happened to it.
-  if (ignored.length > 0 && reported.length === 0) setReported(ignored)
+  // Captured during render, because the parameters are about to be taken out of the URL.
+  if (signature !== '' && signature !== report.signature) setReport({ signature, entries: ignored })
+
+  const clearReport = useCallback(() => {
+    setReport((current) => ({ signature: current.signature, entries: [] }))
+  }, [])
 
   useEffect(() => {
     if (ignored.length === 0) return
@@ -72,6 +82,8 @@ export function useFilterValues(filters: ReadonlyArray<DashboardFilter>): UseFil
       const [first, second] = paramNamesFor(filter)
       if (first === undefined) return
 
+      clearReport()
+
       if (filter.kind === 'multi-select') {
         void setListValues({ [first]: Array.isArray(value) && value.length > 0 ? value : null })
         return
@@ -89,18 +101,20 @@ export function useFilterValues(filters: ReadonlyArray<DashboardFilter>): UseFil
 
       void setStrings({ [first]: typeof value === 'string' && value !== '' ? value : null })
     },
-    [setListValues, setStrings],
+    [clearReport, setListValues, setStrings],
   )
 
   const reset = useCallback(() => {
+    clearReport()
     void setStrings(null)
     void setListValues(null)
-  }, [setListValues, setStrings])
+  }, [clearReport, setListValues, setStrings])
 
   return {
     values,
     activeCount: countActiveFilters(filters, values),
-    ignored: ignored.length > 0 ? ignored : reported,
+    ignored: report.entries,
+    dismissIgnored: clearReport,
     setValue,
     reset,
   }

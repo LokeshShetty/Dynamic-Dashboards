@@ -1,4 +1,4 @@
-import { Filter, RotateCcw } from 'lucide-react'
+import { Filter, RotateCcw, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 
@@ -18,6 +18,7 @@ type Props = {
   ignored: IgnoredParam[]
   onChange: (filter: DashboardFilter, value: FilterValue) => void
   onReset: () => void
+  onDismissIgnored: () => void
 }
 
 export function FilterBar({
@@ -29,6 +30,7 @@ export function FilterBar({
   ignored,
   onChange,
   onReset,
+  onDismissIgnored,
 }: Props) {
   if (filters.length === 0 && dropped.length === 0) return null
 
@@ -63,8 +65,8 @@ export function FilterBar({
       </div>
 
       {dropped.length > 0 ? (
-        <output className="border-warning bg-warning-surface text-fg block rounded-md border p-2 text-xs">
-          <ul className="flex flex-col gap-1">
+        <output className="border-warning bg-warning-surface text-fg flex items-start gap-2 rounded-md border p-2 text-xs">
+          <ul className="flex flex-1 flex-col gap-1">
             {dropped.map((entry) => (
               <li key={`${entry.index}-${entry.id ?? 'unnamed'}`}>
                 The filter {entry.id === null ? `at position ${entry.index + 1}` : `“${entry.id}”`}{' '}
@@ -76,8 +78,8 @@ export function FilterBar({
       ) : null}
 
       {ignored.length > 0 ? (
-        <output className="border-warning bg-warning-surface text-fg block rounded-md border p-2 text-xs">
-          <ul className="flex flex-col gap-1">
+        <output className="border-warning bg-warning-surface text-fg flex items-start gap-2 rounded-md border p-2 text-xs">
+          <ul className="flex flex-1 flex-col gap-1">
             {ignored.map((entry) => (
               <li key={entry.params.join('+')}>
                 Ignored <code className="text-fg">{entry.params.join(' and ')}</code>
@@ -87,6 +89,15 @@ export function FilterBar({
               </li>
             ))}
           </ul>
+
+          <Button
+            size="sm"
+            variant="ghost"
+            aria-label="Dismiss the ignored parameter notice"
+            onClick={onDismissIgnored}
+          >
+            <X aria-hidden="true" className="size-3" />
+          </Button>
         </output>
       ) : null}
     </section>
