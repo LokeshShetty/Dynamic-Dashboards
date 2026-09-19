@@ -504,9 +504,11 @@ The catalogue offers the four widget types. A new widget takes the first free sl
 a default size for its type, and the editor opens on it immediately: bindings are left empty
 rather than guessed, so until a field is chosen the tile says it is not configured yet.
 
-Each tile carries a toolbar: a drag handle, rename, edit, duplicate, remove, and on the tile being
-worked on, arrows for moving and resizing. Every control is an icon button with a name that says
-which widget it acts on, and remove goes through the confirm dialog.
+Each tile carries a short toolbar: a drag handle, rename, edit, duplicate, remove. Every control is
+an icon button with a name that says which widget it acts on, and remove goes through the confirm
+dialog. It is five buttons and not thirteen because a tile can be two columns wide: the earlier
+toolbar, which carried a button for each direction a tile could move and grow, was wider than the
+tile it belonged to and hung over its neighbours.
 
 Moving and resizing themselves are described once, under **Arranging the grid**: a pointer drag
 pushes the tiles it lands on, a key press swaps or steps past them, and every arrangement is
@@ -667,6 +669,9 @@ tile will land, and the arrow keys do the same two jobs from the keyboard: arrow
 arrows resize, while focus is anywhere in the tile. The toolbar above each tile is left with the
 four things that have no gesture: rename, edit, duplicate, remove.
 
+The toolbar is also bounded by the tile it belongs to: it is anchored to both of the tile's edges
+and wraps inside them, so no arrangement of buttons can spill over the tile next door.
+
 ### The one approved feature dependency
 
 `react-grid-layout` does the dragging and resizing. It is the only dependency **added after the
@@ -688,10 +693,15 @@ write. It would have replaced the smallest part of the work.
 ### Arranging without a pointer
 
 **The library's drag handle and resize grip are pointer only.** They are not the accessible path
-and were never meant to be. The accessible path is the toolbar arrows, which appear on the tile
-being worked on, and the arrow keys, which do the same two jobs while focus is anywhere in the
-tile: arrows move, shift and arrows resize. Both still work with the library in place, and both
-are verified against the shipped demo at `/d/demo?edit=1`.
+and were never meant to be. The accessible path is the arrow keys: they move a tile, and with
+shift they resize it, while focus is anywhere in the tile. They still work with the library in
+place, and are verified against the shipped demo at `/d/demo?edit=1`.
+
+There were once toolbar arrows as well, one button per direction for both jobs. They were removed:
+thirteen buttons did not fit inside a two column tile, and the row hung over the tile beside it.
+What they did is what the arrow keys do, the drag handle's name says so, and every step is read
+out in the live region, so the path they served is still there. The cost is discoverability, which
+is recorded in **Known limits**.
 
 The keyboard and the pointer differ in one way, deliberately. A drag pushes the tiles it lands on
 out of the way, because that is what a pointer gesture means. A keyboard step does not push: two
@@ -1014,6 +1024,7 @@ Things that are deliberate rather than unfinished, and what each one would take 
 | Sharing works within one browser                       | localStorage is per browser and per origin.                                                                                                        | A REST implementation of the store interface, which is one file.                                                      |
 | Charts cap at 8 series when grouping                   | More lines than that stop being readable, and a chart that cannot be read is not showing the truth either.                                         | Nothing technical; it is a readability decision.                                                                      |
 | The demo world is generated from a fixed seed and date | Two reviewers should see the same numbers, and the shipped date filters should keep matching data.                                                 | Generating relative to now, at the cost of reproducibility.                                                           |
+| Moving and resizing by keyboard are not on the toolbar | Thirteen buttons did not fit inside a two column tile. The arrow keys do both jobs, the drag handle's name says so, and each step is announced.    | A menu behind one button, which is a popover, a focus trap and a second way to reach what a key press already does.   |
 
 ## Open questions
 

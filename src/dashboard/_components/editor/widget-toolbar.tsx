@@ -1,27 +1,11 @@
-import {
-  ArrowDown,
-  ArrowLeft,
-  ArrowRight,
-  ArrowUp,
-  Copy,
-  GripVertical,
-  Pencil,
-  Trash2,
-  Type,
-} from 'lucide-react'
+import { Copy, GripVertical, Pencil, Trash2, Type } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-
-import { TILE_MOVES, TILE_RESIZES } from '../../_constants'
 
 type Props = {
   title: string
   /** Read out with the drag handle, so a keyboard user knows where the tile currently sits. */
   position: string
-  /** Moving and resizing by button appear on the tile being worked on, not on all of them. */
-  isSelected: boolean
-  onMove: (dx: number, dy: number) => void
-  onResize: (dw: number, dh: number) => void
   onRename: () => void
   onEdit: () => void
   onDuplicate: () => void
@@ -29,24 +13,14 @@ type Props = {
 }
 
 /**
- * The library's drag handle and resize grip are pointer only. These buttons, and the arrow keys
- * they mirror, are the path that does not need a pointer, so they are not decoration: they are
- * how the grid is arranged without a mouse. They appear on the tile being worked on, because
- * thirteen buttons on every tile is a wall rather than an editor.
+ * What can be done to a tile, in one short row that fits inside the narrowest tile the grid
+ * allows. Moving and resizing are not here: they are the drag handle for a pointer and the arrow
+ * keys for a keyboard, which the handle's label spells out, because a row of thirteen buttons
+ * was wider than the tile it belonged to and spilled over its neighbours.
  */
-export function WidgetToolbar({
-  title,
-  position,
-  isSelected,
-  onMove,
-  onResize,
-  onRename,
-  onEdit,
-  onDuplicate,
-  onRemove,
-}: Props) {
+export function WidgetToolbar({ title, position, onRename, onEdit, onDuplicate, onRemove }: Props) {
   return (
-    <div className="border-border bg-surface-raised flex items-center gap-0.5 rounded-md border p-0.5 shadow-sm">
+    <div className="border-border bg-surface-raised flex max-w-full flex-wrap items-center justify-end gap-0.5 rounded-md border p-0.5 shadow-sm">
       {/* The grid library drags by this class; the arrow keys do the same job from the tile. */}
       <button
         type="button"
@@ -69,55 +43,6 @@ export function WidgetToolbar({
       <Button variant="ghost" size="sm" aria-label={`Remove ${title}`} onClick={onRemove}>
         <Trash2 aria-hidden="true" className="text-danger size-3" />
       </Button>
-
-      {isSelected ? (
-        <>
-          <span className="bg-border mx-0.5 h-4 w-px" aria-hidden="true" />
-
-          {TILE_MOVES.map((move) => (
-            <Button
-              key={move.label}
-              variant="ghost"
-              size="sm"
-              aria-label={`Move ${title} ${move.label}`}
-              onClick={() => onMove(move.x, move.y)}
-            >
-              <MoveIcon direction={move.label} />
-            </Button>
-          ))}
-
-          <span className="bg-border mx-0.5 h-4 w-px" aria-hidden="true" />
-
-          {TILE_RESIZES.map((resize) => (
-            <Button
-              key={resize.label}
-              variant="ghost"
-              size="sm"
-              aria-label={`Make ${title} ${resize.label}`}
-              onClick={() => onResize(resize.w, resize.h)}
-            >
-              <ResizeIcon direction={resize.label} />
-            </Button>
-          ))}
-        </>
-      ) : null}
     </div>
   )
-}
-
-/** The arrow that matches a direction, kept beside the buttons that use it. */
-function MoveIcon({ direction }: { direction: (typeof TILE_MOVES)[number]['label'] }) {
-  const Icon = { left: ArrowLeft, right: ArrowRight, up: ArrowUp, down: ArrowDown }[direction]
-  return <Icon aria-hidden="true" className="size-3" />
-}
-
-function ResizeIcon({ direction }: { direction: (typeof TILE_RESIZES)[number]['label'] }) {
-  const Icon = {
-    narrower: ArrowLeft,
-    wider: ArrowRight,
-    shorter: ArrowUp,
-    taller: ArrowDown,
-  }[direction]
-
-  return <Icon aria-hidden="true" className="size-3 opacity-70" />
 }

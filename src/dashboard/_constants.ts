@@ -76,28 +76,13 @@ export type WidgetKind = (typeof WIDGET_KINDS)[number]
 export type Aggregate = (typeof AGGREGATES)[number]
 export type FilterKind = (typeof FILTER_KINDS)[number]
 
-/** Which way an arrow key or a toolbar arrow moves a tile. */
+/** Which way an arrow key moves a tile. Shift and the same key resizes it. */
 export const GRID_DIRECTIONS = {
   ArrowLeft: { x: -1, y: 0 },
   ArrowRight: { x: 1, y: 0 },
   ArrowUp: { x: 0, y: -1 },
   ArrowDown: { x: 0, y: 1 },
 } as const
-
-/** The toolbar's move and resize buttons, as data, because they are eight of the same thing. */
-export const TILE_MOVES = [
-  { label: 'left', x: -1, y: 0 },
-  { label: 'right', x: 1, y: 0 },
-  { label: 'up', x: 0, y: -1 },
-  { label: 'down', x: 0, y: 1 },
-] as const
-
-export const TILE_RESIZES = [
-  { label: 'narrower', w: -1, h: 0 },
-  { label: 'wider', w: 1, h: 0 },
-  { label: 'shorter', w: 0, h: -1 },
-  { label: 'taller', w: 0, h: 1 },
-] as const
 
 /** Chart series colours, from the theme tokens, so they stay legible in both themes. */
 export const CHART_SERIES_COLORS = [

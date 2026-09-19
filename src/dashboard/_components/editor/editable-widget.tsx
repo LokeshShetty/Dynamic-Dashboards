@@ -27,7 +27,8 @@ type Props = {
  * A grid row is a fixed height, so the chrome cannot take a row of its own: a toolbar above the
  * widget is a toolbar taken out of the widget, and the numbers get cut in half. It floats over
  * the top right corner instead, where the title is not, and only while the tile is hovered or
- * being worked on.
+ * being worked on. It is kept short for the same reason: a tile can be two columns wide, and a
+ * toolbar wider than its tile covers the neighbour it has no business covering.
  *
  * Moving and resizing are gestures on the grid: drag the handle, drag the corner. The arrow keys
  * do the same things while focus is in the tile, because a dashboard that can only be arranged
@@ -87,23 +88,26 @@ export function EditableWidget({
     >
       {children}
 
+      {/*
+        Anchored to both edges so the row can never reach past the tile it belongs to, and
+        transparent to the pointer except where the buttons themselves are.
+      */}
       <div
         className={cn(
-          'absolute -top-3 right-2 z-20 transition-opacity',
-          showsToolbar ? 'opacity-100' : 'pointer-events-none opacity-0',
+          'pointer-events-none absolute -top-3 right-2 left-2 z-20 flex justify-end transition-opacity',
+          showsToolbar ? 'opacity-100' : 'opacity-0',
         )}
       >
-        <WidgetToolbar
-          title={title}
-          position={describedPosition}
-          isSelected={isSelected}
-          onMove={actions.onMove}
-          onResize={actions.onResize}
-          onRename={actions.onRename}
-          onEdit={actions.onEdit}
-          onDuplicate={actions.onDuplicate}
-          onRemove={actions.onRemove}
-        />
+        <div className={showsToolbar ? 'pointer-events-auto' : undefined}>
+          <WidgetToolbar
+            title={title}
+            position={describedPosition}
+            onRename={actions.onRename}
+            onEdit={actions.onEdit}
+            onDuplicate={actions.onDuplicate}
+            onRemove={actions.onRemove}
+          />
+        </div>
       </div>
     </div>
   )

@@ -9,7 +9,7 @@ Custom dashboard. Vite + React 19 + TypeScript strict, client only, no backend.
 - TanStack Query for fetching, React Router for the single /d/:id route, nuqs for URL state, React Hook Form + zod for the editor form, Recharts for charts.
 - No component library at all. Native elements first (select, input, details, dialog, table, fieldset), styled with Tailwind.
 - react-grid-layout is the one approved feature dependency: dragging, resizing, and push and compact semantics so a growing tile moves the ones below it. It moves tiles; our own rules still decide whether an arrangement is valid.
-- Its handles are pointer only, so the toolbar arrows and the arrow keys are the accessible path and must keep working.
+- Its handles are pointer only, so the arrow keys are the accessible path and must keep working: arrows move, shift and arrows resize.
 - UI primitives are hand written into src/components/ui/ in the shadcn style (cva + cn), one file per primitive, only when a native element cannot do the job.
 - Any list of options that comes from data goes through src/components/ui/searchable-select.tsx, never a bare native select.
 - No second state library, no HTTP client, no Radix, no toast or modal package. If something feels missing, ask first.
