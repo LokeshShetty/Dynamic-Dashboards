@@ -1,16 +1,22 @@
-# Session transcript: building the configurable dashboard
+# Independent review
 
-Exported from the working session that produced this repository. Tool results are omitted: they
-are file contents, command output and diffs, all of which are in the repository and its history
-already. Every message from both sides is here, in order, with the tool calls named as they
-happened.
+A second assistant, given the brief and the promise and nothing else, asked to find what would
+block a merge. It had not seen the build session and was told to assume nothing in the repository
+was correct. The first message below is the whole brief it was given, so what it was steered
+towards is visible rather than implied.
+
+Eleven findings came back. Every one was reproduced before it was acted on: seven were fixed,
+three are written up in `SELF_REVIEW.md` with reproductions, and one was dropped as a nit.
+
+Tool results are omitted: they are file contents and command output, all of which are in the
+repository already. Everything the reviewer said is here, in order, with its tool calls named
+where they happened.
 
 | | |
 | --- | --- |
-| Messages from me | 1 |
 | Replies | 43 |
 | Tool calls | 40 |
-| Exported | 2026-09-19 |
+| Ran | 2026-09-19 |
 
 ---
 

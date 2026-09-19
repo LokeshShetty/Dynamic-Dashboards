@@ -1,16 +1,19 @@
-# Session transcript: building the configurable dashboard
+# Build session
 
-Exported from the working session that produced this repository. Tool results are omitted: they
-are file contents, command output and diffs, all of which are in the repository and its history
-already. Every message from both sides is here, in order, with the tool calls named as they
-happened.
+The working session this repository was built in, from the first message to the last. It ran in
+nine phases, each one ending with a green `npm run check` and a commit, as one continuous session
+rather than one session per phase.
+
+Tool results are omitted: they are file contents, command output and diffs, all of which are in
+the repository and its history already. Everything either side said is here, in order, with each
+tool call named where it happened.
 
 | | |
 | --- | --- |
 | Messages from me | 50 |
 | Replies | 713 |
 | Tool calls | 567 |
-| Exported | 2026-09-19 |
+| Ran | 2026-09-18 to 2026-09-19 |
 
 ---
 
