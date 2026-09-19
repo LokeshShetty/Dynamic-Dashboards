@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { useQueryStates } from 'nuqs'
 import { useSearchParams } from 'react-router'
@@ -39,6 +39,34 @@ export function useFilterValues(filters: ReadonlyArray<DashboardFilter>): UseFil
     [filters, strings, listValues, rawParams],
   )
 
+  /**
+   * A parameter that was ignored stays in the address bar saying one thing while the dashboard
+   * shows another, and a reader who copies that link passes the confusion on. So it is removed
+   * once it has been reported, and the report is kept here rather than in the URL: what was
+   * ignored is still on screen, and the link now describes what is actually in force.
+   */
+  const [reported, setReported] = useState<IgnoredParam[]>(ignored)
+
+  // Remembered during render, because the parameter is about to be taken out of the URL and the
+  // reader still needs to be told what happened to it.
+  if (ignored.length > 0 && reported.length === 0) setReported(ignored)
+
+  useEffect(() => {
+    if (ignored.length === 0) return
+
+    const names = ignored.flatMap((entry) => entry.params)
+    const stringPatch: Record<string, null> = {}
+    const listPatch: Record<string, null> = {}
+
+    for (const name of names) {
+      if (name in lists) listPatch[name] = null
+      else stringPatch[name] = null
+    }
+
+    if (Object.keys(stringPatch).length > 0) void setStrings(stringPatch)
+    if (Object.keys(listPatch).length > 0) void setListValues(listPatch)
+  }, [ignored, lists, setListValues, setStrings])
+
   const setValue = useCallback(
     (filter: DashboardFilter, value: FilterValue) => {
       const [first, second] = paramNamesFor(filter)
@@ -72,7 +100,7 @@ export function useFilterValues(filters: ReadonlyArray<DashboardFilter>): UseFil
   return {
     values,
     activeCount: countActiveFilters(filters, values),
-    ignored,
+    ignored: ignored.length > 0 ? ignored : reported,
     setValue,
     reset,
   }

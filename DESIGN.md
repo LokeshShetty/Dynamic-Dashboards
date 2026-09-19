@@ -348,8 +348,8 @@ that clears every parameter at once.
 ### The URL is input
 
 Every parameter goes through the same zod schemas the configuration uses, wired into nuqs
-parsers. A parameter that does not validate is ignored, the configured default is used in its
-place, and the bar says which parameter it dropped and why:
+parsers. A parameter that does not validate is ignored, the configured default is used in its place, the
+parameter is taken back out of the address bar, and the bar says which one it dropped and why:
 
 > Ignored `f_submitted_from`=`not-a-date`: invalid ISO date. Using the configured default instead.
 
@@ -357,12 +357,25 @@ A date range needs both ends. A half range falls back to the configured other en
 when there is none. A range that ends before it starts is refused rather than swapped, because
 swapping would silently answer a question nobody asked. None of these paths can crash the page.
 
+Removing the parameter afterwards matters as much as reporting it. A URL that keeps a value the
+dashboard refused says one thing while the screen says another, and the next person to be sent
+that link inherits the confusion. The report stays on screen for the session; the link ends up
+describing what is actually in force.
+
+Dates are committed when the field is left rather than on every keystroke. A date input reports a
+value after each one, so typing a year gives the year 2, then 20, then 202 on the way to 2026, and
+committing those would put a nonsense range in the URL and move the cursor out from under the
+person typing.
+
 ### Options come from the data, not the configuration
 
 `select` and `multi-select` offer the values the field actually holds right now, fetched through
 the same client as everything else, which means they are slow, they can fail, and a renamed field
 takes the options away. So the bar is treated as a data surface in its own right:
 
+- `multi-select` is a dropdown of checkboxes with its own search once there are enough values,
+  rather than a row of chips: chips are readable at four values and unusable at forty, where they
+  wrap across the whole bar and offer nothing to search;
 - while the values load, the control shows a skeleton of its own shape;
 - if the load fails, the control says why and turns into a text input, so a reader who already
   knows the value they want is never blocked by a failing list;

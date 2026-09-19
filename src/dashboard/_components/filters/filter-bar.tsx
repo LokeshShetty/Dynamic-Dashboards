@@ -79,10 +79,11 @@ export function FilterBar({
         <output className="border-warning bg-warning-surface text-fg block rounded-md border p-2 text-xs">
           <ul className="flex flex-col gap-1">
             {ignored.map((entry) => (
-              <li key={entry.param}>
-                Ignored <code className="text-fg">{entry.param}</code>=
-                <code className="text-fg">{entry.value}</code>: {entry.reason}. Using the configured
-                default instead.
+              <li key={entry.params.join('+')}>
+                Ignored <code className="text-fg">{entry.params.join(' and ')}</code>
+                {' = '}
+                <code className="text-fg">{entry.value}</code>: {entry.reason}. The configured
+                default is in force, and the address bar has been tidied to match it.
               </li>
             ))}
           </ul>

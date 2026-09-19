@@ -123,7 +123,8 @@ export function buildFilterParsers(filters: ReadonlyArray<DashboardFilter>) {
   return { parsers, lists }
 }
 
-export type IgnoredParam = { param: string; value: string; reason: string }
+/** A parameter, or a pair of them for a range, that did not survive validation. */
+export type IgnoredParam = { params: string[]; value: string; reason: string }
 
 export type FilterUrlState = {
   values: FilterValues
@@ -150,7 +151,7 @@ export function toFilterUrlState(
     const parsed = schema.safeParse(raw)
     if (parsed.success) return
     ignored.push({
-      param,
+      params: [param],
       value: raw,
       reason: parsed.error.issues[0]?.message ?? 'not a value this filter accepts',
     })
@@ -178,7 +179,11 @@ export function toFilterUrlState(
       case 'multi-select': {
         const raw = rawParams.get(first)
         if (raw !== null && splitList(raw) === null) {
-          ignored.push({ param: first, value: raw, reason: 'not a comma separated list of values' })
+          ignored.push({
+            params: [first],
+            value: raw,
+            reason: 'not a comma separated list of values',
+          })
         }
         const value = lists[first] ?? []
         values[filter.id] = value.length === 0 ? null : value
@@ -215,7 +220,7 @@ function readRange(
   if (filledFrom === '' || filledTo === '') {
     if (from !== '' || to !== '') {
       ignored.push({
-        param: from === '' ? (toParam ?? fromParam) : fromParam,
+        params: [from === '' ? (toParam ?? fromParam) : fromParam],
         value: from === '' ? to : from,
         reason: 'a date range needs both ends, and this filter has no default for the other one',
       })
@@ -225,7 +230,7 @@ function readRange(
 
   if (filledFrom > filledTo) {
     ignored.push({
-      param: `${fromParam} and ${toParam ?? fromParam}`,
+      params: toParam === undefined ? [fromParam] : [fromParam, toParam],
       value: `${filledFrom} to ${filledTo}`,
       reason:
         'the range ends before it starts, and swapping the ends would answer a different question',
