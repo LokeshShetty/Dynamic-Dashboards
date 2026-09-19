@@ -498,7 +498,9 @@ Three ways out, all chosen by the reader:
 
 Last write wins was rejected outright. It is the same failure as a stale widget: work that looks
 saved and is gone. A failed save, for any reason, leaves the draft dirty and untouched, and says
-so in a toast.
+so in a toast that offers to send it again. The retry is offered rather than automatic: a write
+that repeats itself without being asked is how a conflict becomes a surprise, and the person who
+made the change is the one who should decide whether it goes out a second time.
 
 ### What concurrent means here, and what it does not
 

@@ -3,7 +3,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAppStore } from '@/lib/store'
 
 import { dashboardStore } from '../_lib/dashboard-store'
-import { describeStorageFailure, toStorageFailure } from '../_lib/storage-error'
+import {
+  describeStorageFailure,
+  isRetryableStorageFailure,
+  toStorageFailure,
+} from '../_lib/storage-error'
 import type { SaveInput, SaveOutcome } from '../_types'
 import { dashboardQueryKey } from './use-dashboard-record'
 
@@ -20,7 +24,7 @@ export function useSaveDashboard(dashboardId: string) {
   const pushToast = useAppStore((state) => state.pushToast)
   const markDraftSaved = useAppStore((state) => state.markDraftSaved)
 
-  return useMutation<SaveOutcome, Error, SaveInput>({
+  const mutation = useMutation<SaveOutcome, Error, SaveInput>({
     mutationFn: (input) => dashboardStore.save(input),
 
     onSuccess: (outcome) => {
@@ -35,12 +39,21 @@ export function useSaveDashboard(dashboardId: string) {
       })
     },
 
-    onError: (error) => {
+    onError: (error, input) => {
+      const failure = toStorageFailure(error)
+
+      // A write is not retried automatically. It is offered, because the person who made the
+      // change is the one who should decide whether to send it again.
       pushToast({
         tone: 'error',
         title: 'Save failed',
-        description: `${describeStorageFailure(toStorageFailure(error))}. Your changes are still here.`,
+        description: `${describeStorageFailure(failure)}. Your changes are still here.`,
+        ...(isRetryableStorageFailure(failure)
+          ? { action: { label: 'Try saving again', onAction: () => mutation.mutate(input) } }
+          : {}),
       })
     },
   })
+
+  return mutation
 }

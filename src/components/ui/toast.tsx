@@ -76,10 +76,21 @@ function ToastItem({ toast }: { toast: Toast }) {
       onBlurCapture={resume}
     >
       <Icon aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+      <div className="flex min-w-0 flex-1 flex-col items-start gap-1">
         <p className="text-sm font-medium">{toast.title}</p>
         {toast.description === undefined ? null : (
           <p className="text-fg-muted text-xs">{toast.description}</p>
+        )}
+        {toast.action === undefined ? null : (
+          <Button
+            size="sm"
+            onClick={() => {
+              dismissToast(toast.id)
+              toast.action?.onAction()
+            }}
+          >
+            {toast.action.label}
+          </Button>
         )}
       </div>
       <Button

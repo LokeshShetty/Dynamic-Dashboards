@@ -7,6 +7,8 @@ export type Toast = {
   tone: ToastTone
   title: string
   description?: string
+  /** A way to act on what the toast is reporting, where there is one: retry, undo, open. */
+  action?: { label: string; onAction: () => void }
 }
 
 export type ToastSlice = {
