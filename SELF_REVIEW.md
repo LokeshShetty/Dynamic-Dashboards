@@ -3,21 +3,21 @@
 An independent reviewer went through this branch without knowing how it was built, looking for
 things that would block a merge across security, data correctness, concurrency, and whether the
 race test proves what it claims. Eleven findings came back. I reproduced every one of them before
-acting on it, fixed six, and dropped the rest as nits.
+acting on it, fixed seven, and dropped the last as a nit.
 
-Fixed on this branch, each in its own commit:
+Fixed on this branch, in the commits named:
 
 | What                                                                      | Commit    |
 | ------------------------------------------------------------------------- | --------- |
-| A three character currency code the schema allows crashed the whole route | `60fb7f8` |
-| `ignoredFilterIds` was validated, stored, displayed, and never read       | `41e1f3b` |
-| A metric refused aggregates the engine computes and the editor offers     | `5a65ac2` |
-| `count` counted values while the caption counted rows                     | `5a65ac2` |
-| "No data" blamed the filters when the column was simply empty             | `5a65ac2` |
-| A v2 dashboard could migrate into a layout v3 rejects                     | `bf4166f` |
-| A concurrent save could be lost and reported as a success                 | `99c51b3` |
+| A three character currency code the schema allows crashed the whole route | `65994c0` |
+| `ignoredFilterIds` was validated, stored, displayed, and never read       | `0aa11b1` |
+| A metric refused aggregates the engine computes and the editor offers     | `2442938` |
+| `count` counted values while the caption counted rows                     | `2442938` |
+| "No data" blamed the filters when the column was simply empty             | `2442938` |
+| A v2 dashboard could migrate into a layout v3 rejects                     | `fb82711` |
+| A concurrent save could be lost and reported as a success                 | `5026bf3` |
 
-Below are the three most serious that remain.
+Below are the three most serious that remain, then one that is not a defect yet and will be.
 
 ---
 
@@ -28,7 +28,7 @@ Below are the three most serious that remain.
 then writes, which is two operations that another tab can interleave with. Two tabs that both
 read version 5 both pass the check and both write version 6, and the second write wins.
 
-The last commit on this branch reads the write back and reports a conflict when what landed is
+Commit `5026bf3` reads the write back and reports a conflict when what landed is
 not what was written, so the loser is no longer told "Saved" while its work disappears. **The
 overwrite itself still happens**, and the losing revision goes with it: revisions live inside the
 same JSON blob that was replaced, so `?rev=N` cannot recover the clobbered save.
@@ -118,3 +118,40 @@ is already a first class outcome, and doing it properly means the `IgnoredParam`
 `DroppedFilter` paths both need to carry it. It is a contained change, but it touches the code
 path every filter goes through, and it is not worth destabilising that on the day of review for a
 case that requires a deliberately adversarial configuration.
+
+---
+
+## 4. The table holds every cell it shows, and the caps are the only thing keeping that small
+
+**What it is.** `TableWidget` renders every row of the current page and every configured column as
+real DOM nodes. Nothing is windowed. What keeps that cheap today is three caps rather than the
+component: `TABLE_FETCH_LIMIT` is 200 rows, `MAX_PAGE_SIZE` is 100, and `MAX_TABLE_COLUMNS` is 20.
+The caps are the reason the earlier decision was to leave it alone, and that decision is recorded
+in `DESIGN.md` under **Known limits**.
+
+They are configuration limits, not truths about the data. A configuration is allowed to ask for
+the largest of each, and a dashboard is allowed fifty widgets.
+
+**How to reproduce.** A configuration with several table widgets at `pageSize: 100` over twenty
+columns. Each one is 2,000 cells, so six of them is 12,000, and the widget cap allows fifty. Sort
+a column, or change a filter, and every one of those cells is reconciled again. There is no
+hostile file for this yet: `fifty-one-widgets.json` tests the widget cap, not the cell count, and
+the widest shipped table has five columns.
+
+**Impact.** Not wrong, slow. Sorting and filtering on a wide, full page table stutters, and a
+dashboard of them takes a visible pause on every filter change, which on a dashboard that is
+meant to be read while the world changes underneath it is the wrong kind of quiet failure: the
+numbers are right and the page feels broken.
+
+**The fix.** Virtualise rows, and columns with them, since twenty columns wide is the case that
+actually hurts. A windowed body over a fixed row height is the small version. It needs a scroll
+container inside a tile that already scrolls, a measured header, and keyboard and screen reader
+behaviour that does not regress: a virtualised table that a keyboard cannot walk through would
+trade a performance problem for an accessibility one, and that is not a trade this project makes.
+
+**Why it is not fixed here.** It is a dependency and a rewrite of the one component that is
+currently plain and correct, for a configuration nobody has written yet. The caps hold the
+present case, and the honest order is to measure it first: build the wide table hostile file,
+count the frames on a filter change, then virtualise against that number rather than against a
+worry. Raising `MAX_TABLE_COLUMNS` or `MAX_PAGE_SIZE` before that work is done is what would turn
+this from a limit into a defect.

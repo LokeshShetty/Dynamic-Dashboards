@@ -91,7 +91,8 @@ rather than kept, per the testing decision in `CLAUDE.md`:
 fix and why it is not in this branch: concurrent saves can still lose one write between tabs,
 filter values containing a comma are split in the URL, and filter ids that collide after the
 date range suffix drive each other. Seven other findings from the same review are fixed on this
-branch and named there with their commits.
+branch and named there with their commits. It ends with one that is not a defect yet: the table
+holds every cell it renders, and only the row, page and column caps keep that small.
 
 `DESIGN.md` has a **Known limits** section for the things that are deliberate rather than
 unfinished: the 200 row table window, no virtualisation, the 30 revision cap, sharing within one
