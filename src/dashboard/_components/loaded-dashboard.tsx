@@ -14,7 +14,6 @@ import { useSaveNotices } from '@/storage/_hooks/use-save-notices'
 import { useEditMode } from '../_hooks/use-edit-mode'
 import { useFilterValues } from '../_hooks/use-filter-values'
 import type { DashboardFilter, DashboardShell } from '../_lib/config.schema'
-import { toDataFilters } from '../_lib/to-data-query'
 import type { DroppedFilter, WidgetSlot } from '../_types'
 import { DashboardGrid } from './dashboard-grid'
 import { DashboardTransfer } from './dashboard-transfer'
@@ -66,7 +65,8 @@ export function LoadedDashboard({
 
   const filterContext = useMemo(
     () => ({
-      applied: toDataFilters(filters, values),
+      definitions: [...filters],
+      values,
       labels: Object.fromEntries(filters.map((filter) => [filter.field, filter.label])),
     }),
     [filters, values],

@@ -1,6 +1,7 @@
-import type { DataFilter, DataResult } from '@/data/_types'
+import type { DataResult } from '@/data/_types'
 
 import type { DashboardFilter, DashboardShell, Widget } from './_lib/config.schema'
+import type { FilterValues } from './_lib/to-data-query'
 
 /** One validation problem, with the path it was found at, ready to show to a user. */
 export type ConfigIssue = { path: string; message: string }
@@ -85,10 +86,14 @@ export type WidgetState<TResult = DataResult> =
       isRefreshing: boolean
     }
 
-/** What a widget needs to know about the filter bar above it. */
+/**
+ * What a widget needs to know about the filter bar above it. The definitions and the values are
+ * passed rather than the finished predicates, because a widget may opt out of a filter with
+ * `ignoredFilterIds`, and only the widget knows which.
+ */
 export type WidgetFilterContext = {
-  /** The predicates that go into the query. */
-  applied: DataFilter[]
+  definitions: DashboardFilter[]
+  values: FilterValues
   /** Field name to the label the reader sees, so a skipped filter can be named on the tile. */
   labels: Record<string, string>
 }

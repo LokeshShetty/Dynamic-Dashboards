@@ -6,9 +6,9 @@ import { humanizeFieldName } from '@/lib/text'
 import { AGGREGATE_LABELS } from '../../_constants'
 import { useWidgetData } from '../../_hooks/use-widget-data'
 import type { ChartWidget } from '../../_lib/config.schema'
-import { unappliedFiltersOf } from '../../_lib/filter-notices'
+import { ignoredFilterLabels, unappliedFiltersOf } from '../../_lib/filter-notices'
 import { resolveFormatter } from '../../_lib/format'
-import { toChartQuery } from '../../_lib/to-data-query'
+import { toChartQuery, toDataFilters } from '../../_lib/to-data-query'
 import { withPresentationCheck } from '../../_lib/widget-state'
 import type { WidgetFilterContext } from '../../_types'
 import { ChartSkeleton } from '../skeletons/widget-skeletons'
@@ -27,10 +27,13 @@ type Props = {
 }
 
 export function ChartWidgetTile({ dashboardId, dataset, widget, filters }: Props) {
+  // A widget that opts out of a filter does not get it, which is the point of the setting.
+  const applied = toDataFilters(filters.definitions, filters.values, widget.ignoredFilterIds)
+
   const { state, refresh } = useWidgetData({
     dashboardId,
     widgetId: widget.id,
-    query: toChartQuery(widget, dataset, filters.applied),
+    query: toChartQuery(widget, dataset, applied),
   })
 
   const checked = withPresentationCheck(state, (result) => checkChart(result, widget))
@@ -44,6 +47,7 @@ export function ChartWidgetTile({ dashboardId, dataset, widget, filters }: Props
       configText={JSON.stringify(widget, null, 2)}
       onRefresh={refresh}
       unappliedFilters={unappliedFiltersOf(checked, filters.labels)}
+      ignoredFilters={ignoredFilterLabels(widget.ignoredFilterIds, filters.definitions)}
     >
       {(result) => {
         if (result.kind !== 'series') return null

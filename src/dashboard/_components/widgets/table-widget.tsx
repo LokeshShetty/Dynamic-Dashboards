@@ -2,9 +2,9 @@ import type { DataResult } from '@/data/_types'
 
 import { useWidgetData } from '../../_hooks/use-widget-data'
 import type { TableWidget } from '../../_lib/config.schema'
-import { unappliedFiltersOf } from '../../_lib/filter-notices'
+import { ignoredFilterLabels, unappliedFiltersOf } from '../../_lib/filter-notices'
 import { toColumnViews } from '../../_lib/table-columns'
-import { toTableQuery } from '../../_lib/to-data-query'
+import { toDataFilters, toTableQuery } from '../../_lib/to-data-query'
 import { withPresentationCheck } from '../../_lib/widget-state'
 import type { WidgetFilterContext } from '../../_types'
 import { TableSkeleton } from '../skeletons/widget-skeletons'
@@ -19,10 +19,13 @@ type Props = {
 }
 
 export function TableWidgetTile({ dashboardId, dataset, widget, filters }: Props) {
+  // A widget that opts out of a filter does not get it, which is the point of the setting.
+  const applied = toDataFilters(filters.definitions, filters.values, widget.ignoredFilterIds)
+
   const { state, refresh } = useWidgetData({
     dashboardId,
     widgetId: widget.id,
-    query: toTableQuery(widget, dataset, filters.applied),
+    query: toTableQuery(widget, dataset, applied),
   })
 
   // Only a table with nothing left to show is unresolvable. One dead column is the column's
@@ -38,6 +41,7 @@ export function TableWidgetTile({ dashboardId, dataset, widget, filters }: Props
       configText={JSON.stringify(widget, null, 2)}
       onRefresh={refresh}
       unappliedFilters={unappliedFiltersOf(checked, filters.labels)}
+      ignoredFilters={ignoredFilterLabels(widget.ignoredFilterIds, filters.definitions)}
     >
       {(result) =>
         result.kind === 'rows' ? (

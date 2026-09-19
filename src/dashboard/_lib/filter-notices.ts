@@ -29,3 +29,16 @@ export function unappliedFiltersOf(
     reason: describeSkippedFilter(skipped, labels[skipped.field] ?? skipped.field),
   }))
 }
+
+/**
+ * Filters this widget opts out of. Two tiles under one filter bar showing different numbers is
+ * confusing unless the one that ignored the bar says it did.
+ */
+export function ignoredFilterLabels(
+  ignoredFilterIds: ReadonlyArray<string> | undefined,
+  definitions: ReadonlyArray<{ id: string; label: string }>,
+): string[] {
+  if (!ignoredFilterIds || ignoredFilterIds.length === 0) return []
+
+  return ignoredFilterIds.map((id) => definitions.find((filter) => filter.id === id)?.label ?? id)
+}

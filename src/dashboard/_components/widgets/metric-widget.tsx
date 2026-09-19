@@ -4,9 +4,9 @@ import { humanizeFieldName } from '@/lib/text'
 import { AGGREGATE_LABELS } from '../../_constants'
 import { useWidgetData } from '../../_hooks/use-widget-data'
 import type { MetricWidget } from '../../_lib/config.schema'
-import { unappliedFiltersOf } from '../../_lib/filter-notices'
+import { ignoredFilterLabels, unappliedFiltersOf } from '../../_lib/filter-notices'
 import { formatByType, resolveFormatter } from '../../_lib/format'
-import { toMetricQuery } from '../../_lib/to-data-query'
+import { toDataFilters, toMetricQuery } from '../../_lib/to-data-query'
 import { withPresentationCheck } from '../../_lib/widget-state'
 import type { WidgetFilterContext } from '../../_types'
 import { MetricSkeleton } from '../skeletons/widget-skeletons'
@@ -20,10 +20,13 @@ type Props = {
 }
 
 export function MetricWidgetTile({ dashboardId, dataset, widget, filters }: Props) {
+  // A widget that opts out of a filter does not get it, which is the point of the setting.
+  const applied = toDataFilters(filters.definitions, filters.values, widget.ignoredFilterIds)
+
   const { state, refresh } = useWidgetData({
     dashboardId,
     widgetId: widget.id,
-    query: toMetricQuery(widget, dataset, filters.applied),
+    query: toMetricQuery(widget, dataset, applied),
   })
 
   const checked = withPresentationCheck(state, (result) => checkMetric(result, widget))
@@ -37,6 +40,7 @@ export function MetricWidgetTile({ dashboardId, dataset, widget, filters }: Prop
       configText={JSON.stringify(widget, null, 2)}
       onRefresh={refresh}
       unappliedFilters={unappliedFiltersOf(checked, filters.labels)}
+      ignoredFilters={ignoredFilterLabels(widget.ignoredFilterIds, filters.definitions)}
     >
       {(result) => <MetricValue result={result} widget={widget} />}
     </WidgetFrame>

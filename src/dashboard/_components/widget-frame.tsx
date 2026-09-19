@@ -25,8 +25,9 @@ import { WidgetErrorBoundary } from './widget-error-boundary'
 import { WidgetStateNotice } from './widget-state-notice'
 import { WidgetStatePanel } from './widget-state-panel'
 
-/** A stable empty list, so the default does not make every frame re-render. */
+/** Stable empty lists, so the defaults do not make every frame re-render. */
 const NO_UNAPPLIED_FILTERS: UnappliedFilter[] = []
+const NO_IGNORED_FILTERS: string[] = []
 
 type Props<TResult> = {
   title: string
@@ -37,6 +38,8 @@ type Props<TResult> = {
   onRefresh: () => void
   /** Filters the data layer could not honour, so the tile can say it is showing unfiltered data. */
   unappliedFilters?: UnappliedFilter[]
+  /** Filters this widget opts out of by configuration, which is a different thing entirely. */
+  ignoredFilters?: string[]
   children: (result: TResult) => ReactNode
   className?: string
 }
@@ -57,6 +60,7 @@ export function WidgetFrame<TResult>({
   configText,
   onRefresh,
   unappliedFilters = NO_UNAPPLIED_FILTERS,
+  ignoredFilters = NO_IGNORED_FILTERS,
   children,
   className,
 }: Props<TResult>) {
@@ -81,6 +85,11 @@ export function WidgetFrame<TResult>({
           </h3>
           <span className="flex flex-wrap items-center gap-1">
             {isTakenOver ? null : <HeaderBadge state={state} />}
+            {ignoredFilters.length > 0 ? (
+              <WidgetBadge icon={FilterX} tone="neutral">
+                {`Ignores ${ignoredFilters.join(', ')}`}
+              </WidgetBadge>
+            ) : null}
             {unappliedFilters.length > 0 ? (
               <WidgetBadge icon={FilterX} tone="warning">
                 {unappliedFilters.length === 1
