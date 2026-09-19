@@ -78,8 +78,13 @@ export function useWidgetData({
   }
 
   if (result.data !== undefined) {
-    if (isEmptyResult(result.data)) {
-      return { refresh, state: { kind: 'empty', fetchedAt: result.dataUpdatedAt, isRefreshing } }
+    const empty = describeEmptiness(result.data)
+
+    if (empty !== null) {
+      return {
+        refresh,
+        state: { kind: 'empty', reason: empty, fetchedAt: result.dataUpdatedAt, isRefreshing },
+      }
     }
 
     return {
@@ -92,16 +97,29 @@ export function useWidgetData({
 }
 
 /**
- * Nothing to show is its own state. A metric whose value is null is empty rather than zero,
- * because rendering it as zero would be the clearest possible way to show something untrue.
+ * Nothing to show is its own state, and there are two ways to get there. Either nothing matched
+ * the filters, or plenty matched and the field being read is empty in all of them. Those call
+ * for different things from the reader, so the tile says which one it is rather than blaming the
+ * filters for both.
+ *
+ * A metric whose value is null is empty rather than zero, because rendering it as zero would be
+ * the clearest possible way to show something untrue.
  */
-export function isEmptyResult(result: DataResult) {
+export function describeEmptiness(result: DataResult): string | null {
+  const matchedNothing = 'No rows match the filters in force, so there is nothing to show here.'
+
   switch (result.kind) {
-    case 'value':
-      return result.matchedRows === 0 || result.value === null
+    case 'value': {
+      if (result.matchedRows === 0) return matchedNothing
+      if (result.value !== null) return null
+
+      return `${result.matchedRows.toLocaleString()} rows match the filters, but every one of them is empty in ${result.field.name}, so there is no value to show.`
+    }
+
     case 'rows':
-      return result.rows.length === 0
+      return result.rows.length === 0 ? matchedNothing : null
+
     case 'series':
-      return result.points.length === 0
+      return result.points.length === 0 ? matchedNothing : null
   }
 }

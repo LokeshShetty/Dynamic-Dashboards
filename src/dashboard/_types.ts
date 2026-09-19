@@ -66,7 +66,7 @@ export type WidgetState<TResult = DataResult> =
   | { kind: 'invalid'; reason: string; issues: ConfigIssue[] }
   | { kind: 'unresolvable'; reason: string }
   | { kind: 'loading'; attempt: number; maxAttempts: number }
-  | { kind: 'empty'; fetchedAt: number; isRefreshing: boolean }
+  | { kind: 'empty'; reason: string; fetchedAt: number; isRefreshing: boolean }
   | { kind: 'ok'; result: TResult; fetchedAt: number; isRefreshing: boolean }
   | {
       kind: 'stale'

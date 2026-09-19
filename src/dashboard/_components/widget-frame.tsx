@@ -175,7 +175,7 @@ export function WidgetFrame<TResult>({
               tone="neutral"
               icon={Inbox}
               label="No data"
-              message="No rows match the filters in force, so there is nothing to show here."
+              message={state.reason}
               retry={{ label: 'Check again', onRetry: onRefresh }}
             />
           ) : null}

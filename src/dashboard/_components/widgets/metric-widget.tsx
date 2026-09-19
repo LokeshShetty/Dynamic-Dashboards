@@ -58,13 +58,27 @@ function MetricValue({ result, widget }: { result: DataResult; widget: MetricWid
   return (
     <div className="flex flex-col gap-1">
       <p className="text-fg text-3xl font-semibold tabular-nums">{text}</p>
-      <p className="text-fg-muted text-xs">
-        {AGGREGATE_LABELS[widget.value.aggregate]} of{' '}
-        {humanizeFieldName(result.field.name, result.field.unit)} over{' '}
-        {result.matchedRows.toLocaleString()} rows
-      </p>
+      <p className="text-fg-muted text-xs tabular-nums">{provenanceOf(result, widget)}</p>
     </div>
   )
+}
+
+/**
+ * What the number is, in one line. Count is the odd one out: it counts the values that are
+ * there, not the rows that matched, and those differ whenever a column has gaps. Saying "count
+ * of paid at over 5,000 rows" above the number 3,214 reads as though the two agree.
+ */
+function provenanceOf(result: DataResult, widget: MetricWidget): string {
+  if (result.kind !== 'value') return ''
+
+  const name = humanizeFieldName(result.field.name, result.field.unit)
+  const rows = result.matchedRows.toLocaleString()
+
+  if (widget.value.aggregate === 'count') {
+    return `rows with a value in ${name}, out of ${rows} matching`
+  }
+
+  return `${AGGREGATE_LABELS[widget.value.aggregate]} of ${name} over ${rows} matching rows`
 }
 
 /**
@@ -75,8 +89,20 @@ function MetricValue({ result, widget }: { result: DataResult; widget: MetricWid
 function checkMetric(result: DataResult, widget: MetricWidget): string | null {
   if (result.kind !== 'value') return 'the data source answered with the wrong shape for a metric'
 
-  if (widget.value.aggregate !== 'count' && result.field.type !== 'number') {
-    return `a ${widget.value.aggregate} needs a number field, and "${result.field.name}" is ${result.field.type}`
+  // The same rule the query engine applies, rather than a stricter one: totals and averages need
+  // numbers, extremes need something ordered, and first and last work over anything. Refusing a
+  // latest date the engine had already computed was the widget claiming it could not show an
+  // answer it was holding, and the editor offered that aggregate for that field.
+  const aggregate = widget.value.aggregate
+  const type = result.field.type
+  const name = humanizeFieldName(result.field.name, result.field.unit)
+
+  if ((aggregate === 'sum' || aggregate === 'avg') && type !== 'number') {
+    return `a ${AGGREGATE_LABELS[aggregate].toLowerCase()} needs a number field, and ${name} is ${type}`
+  }
+
+  if ((aggregate === 'min' || aggregate === 'max') && type === 'boolean') {
+    return `${AGGREGATE_LABELS[aggregate].toLowerCase()} needs a field that can be ordered, and ${name} is a yes or no`
   }
 
   const formatter = resolveFormatter(result.field, widget.format)
