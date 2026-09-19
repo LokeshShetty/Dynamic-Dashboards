@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import { isRecord } from '@/lib/guards'
 import { useAppStore } from '@/lib/store'
@@ -25,6 +25,12 @@ import { defaultSizeFor, newWidgetEntry } from '../_lib/widget-defaults'
 export type EditorApi = {
   shell: DashboardShell | null
   isDirty: boolean
+  /**
+   * What just happened to a tile, for a polite live region. A pointer drag shows its own result
+   * on screen; a key press has nothing to show, so it says it instead, including the press that
+   * did nothing because the tile is against the edge of the grid.
+   */
+  announcement: string
   addWidget: (kind: WidgetKind) => number | null
   updateWidget: (index: number, entry: unknown) => void
   renameWidget: (index: number, title: string) => void
@@ -51,6 +57,8 @@ export function useEditor(): EditorApi {
   const entries = useMemo(() => shell?.widgets ?? [], [shell])
   const columns = shell?.layout.columns ?? 12
 
+  const [announcement, setAnnouncement] = useState('')
+
   const refuse = useCallback(
     (action: string, reason: string) => {
       pushToast({ tone: 'info', title: `${action} refused`, description: reason })
@@ -67,18 +75,27 @@ export function useEditor(): EditorApi {
   )
 
   const reportRefusal = useCallback(
-    (action: string, refusal: PlacementRefusal) => {
-      // Running into the edge of the grid is not a failure, it is the edge. Only a tile that
-      // genuinely has nowhere to go is worth interrupting the reader for.
+    (action: string, title: string, refusal: PlacementRefusal) => {
+      // Running into the edge of the grid is not a failure, it is the edge: it interrupts nobody
+      // with a toast, and it is announced, because a key press that changes nothing on screen
+      // tells a screen reader user nothing at all.
       if (refusal.kind === 'overlap') {
-        refuse(
-          action,
-          `every place in that direction is taken, starting with “${titleOf(refusal.withId)}”`,
-        )
+        const blocker = titleOf(refusal.withId)
+        refuse(action, `every place in that direction is taken, starting with “${blocker}”`)
+        setAnnouncement(`${title} cannot move that way, ${blocker} is in the way`)
+        return
       }
+
+      setAnnouncement(`${title}: ${refusal.message}`)
     },
     [refuse, titleOf],
   )
+
+  const announcePlacement = useCallback((title: string, rect: Rect) => {
+    setAnnouncement(
+      `${title} is at column ${rect.x + 1}, row ${rect.y + 1}, ${rect.w} wide by ${rect.h} tall`,
+    )
+  }, [])
 
   const addWidget = useCallback(
     (kind: WidgetKind) => {
@@ -111,6 +128,7 @@ export function useEditor(): EditorApi {
   return {
     shell,
     isDirty: isDraftDirty(draft, baseline),
+    announcement,
 
     addWidget,
 
@@ -170,6 +188,7 @@ export function useEditor(): EditorApi {
 
         if (swap) {
           const theirRect = swap.rect
+          setAnnouncement(`${titleOf(id)} swapped places with ${titleOf(swap.id)}`)
           setDraftWidgets(
             entries.map((candidate, at) => {
               if (!isRecord(candidate)) return candidate
@@ -184,13 +203,14 @@ export function useEditor(): EditorApi {
         const outcome = nextPlacement(placements, id, rect, { x: dx, y: dy }, columns)
 
         if ('refusal' in outcome) {
-          reportRefusal('Move', outcome.refusal)
+          reportRefusal('Move', titleOf(id), outcome.refusal)
           return
         }
 
+        announcePlacement(titleOf(id), outcome.rect)
         replace(index, (current) => ({ ...current, layout: outcome.rect }))
       },
-      [columns, entries, reportRefusal, replace, setDraftWidgets],
+      [announcePlacement, columns, entries, reportRefusal, replace, setDraftWidgets, titleOf],
     ),
 
     applyLayouts: useCallback(
@@ -227,13 +247,14 @@ export function useEditor(): EditorApi {
         const outcome = clampResize(placementsOf(entries), id, rect, { w: dw, h: dh }, columns)
 
         if ('refusal' in outcome) {
-          reportRefusal('Resize', outcome.refusal)
+          reportRefusal('Resize', titleOf(id), outcome.refusal)
           return
         }
 
+        announcePlacement(titleOf(id), outcome.rect)
         replace(index, (current) => ({ ...current, layout: outcome.rect }))
       },
-      [columns, entries, reportRefusal, replace],
+      [announcePlacement, columns, entries, reportRefusal, replace, titleOf],
     ),
   }
 }

@@ -2,6 +2,30 @@
 
 Living document. It is updated at the end of every phase, not written from memory at the end.
 
+## Contents
+
+- [The promise](#the-promise)
+- [Shape of the system](#shape-of-the-system)
+- [The configuration format](#the-configuration-format)
+- [The load pipeline](#the-load-pipeline)
+- [Edge cases and what happens](#edge-cases-and-what-happens)
+- [The data layer](#the-data-layer)
+- [Rendering](#rendering)
+- [Dashboard filters](#dashboard-filters)
+- [The editor](#the-editor)
+- [Persistence, revisions and conflicts](#persistence-revisions-and-conflicts)
+- [The hostile corpus](#the-hostile-corpus)
+- [Arranging the grid](#arranging-the-grid)
+- [UI primitives](#ui-primitives)
+- [Decision log](#decision-log)
+- [Guarantees and non-guarantees](#guarantees-and-non-guarantees)
+- [Security](#security)
+- [Accessibility](#accessibility)
+- [What I would do next](#what-i-would-do-next)
+- [Known limits](#known-limits)
+- [Open questions](#open-questions)
+- [Appendix: how this was built](#appendix-how-this-was-built)
+
 ## The promise
 
 Every widget is either showing the truth or visibly showing that it cannot.
@@ -16,21 +40,7 @@ Three failure modes the promise rules out:
 2. A widget that fails silently: blank space, an empty table, a zero that is really an error.
 3. One bad widget taking down the dashboard around it, which hides the truth of every other widget.
 
-## Status
-
-| Phase                                     | State       |
-| ----------------------------------------- | ----------- |
-| 1. Project setup                          | Done        |
-| 2. Config schema, migrations, tests       | Done        |
-| 3. Data layer, chaos controls, fetch hook | Done        |
-| 4. Rendering and the four widget types    | Done        |
-| 5. Dashboard filters                      | Done        |
-| 6. Widget editor                          | Done        |
-| 7. Persistence, revisions, conflicts      | Done        |
-| 8. Hostile configuration corpus           | Done        |
-| 9. Documentation and self-review          | Not started |
-
-## Shape of the system (planned)
+## Shape of the system
 
 - A **configuration** is versioned JSON: `schemaVersion` describes the format, a separate `version`
   counter describes the save and drives compare and swap on write.
@@ -52,31 +62,58 @@ Three failure modes the promise rules out:
 
 A configuration is JSON with two independent numbers on it:
 
-- `schemaVersion` describes the **format**. This build understands version 2 and migrates
-  version 1 forward. It is bumped by developers when the format changes.
-- `version` is the **save counter**. It is bumped on every save and is what persistence
-  compares on write, so two people cannot overwrite each other without noticing.
+- `schemaVersion` describes the **format**. This build understands version 3, and migrates
+  version 1 and version 2 forward on the way in. It is bumped by developers when the format
+  changes.
+- `version` is the **save counter**. It is bumped on every save and is what persistence compares
+  on write, so two people cannot overwrite each other without noticing.
+
+This is the shipped demo, `src/dashboard/_fixtures/dashboard-v3.json`, with most of its widgets
+elided:
 
 ```jsonc
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "id": "demo",
-  "title": "Operations overview",
-  "version": 4,
-  "updatedAt": "2026-09-01T09:00:00.000Z", // optional: absent means unknown, never invented
-  "dataset": "orders",
+  "title": "Claims operations",
+  "version": 6,
+  "updatedAt": "2026-09-15T09:00:00.000Z", // optional: absent means unknown, never invented
+  "dataset": "claims",
   "layout": { "columns": 12 },
   "filters": [
-    { "id": "region", "kind": "select", "label": "Region", "field": "region", "options": [] },
+    {
+      "id": "status",
+      "kind": "select",
+      "label": "Status",
+      "field": "status",
+      "options": [{ "value": "paid", "label": "Paid" }],
+    },
+    {
+      "id": "submitted",
+      "kind": "date-range",
+      "label": "Submitted",
+      "field": "submitted_at",
+      "defaultValue": { "from": "2026-08-01", "to": "2026-09-15" },
+    },
   ],
   "widgets": [
     {
-      "id": "revenue",
+      "id": "billed",
       "kind": "metric",
-      "title": "Revenue",
-      "layout": { "colSpan": 3, "rowSpan": 1 },
-      "value": { "field": "revenue", "aggregate": "sum" },
+      "title": "Billed",
+      "layout": { "x": 0, "y": 0, "w": 3, "h": 1 },
+      "value": { "field": "amount_cents", "aggregate": "sum" },
       "format": { "style": "currency", "currency": "USD", "decimals": 0 },
+    },
+    {
+      "id": "billed-by-week",
+      "kind": "chart",
+      "title": "Billed by week and payer",
+      "layout": { "x": 0, "y": 1, "w": 8, "h": 3 },
+      "chartType": "line",
+      "x": { "field": "submitted_at", "bucket": "week" },
+      "series": [{ "field": "amount_cents", "aggregate": "sum", "label": "Billed" }],
+      "groupBy": { "field": "payer" },
     },
   ],
 }
@@ -84,11 +121,11 @@ A configuration is JSON with two independent numbers on it:
 
 Four widget kinds, discriminated by `kind`: `metric`, `table`, `chart`, `text`. Four filter
 kinds, discriminated by `kind`: `select`, `multi-select`, `date-range`, `search`. A widget opts
-out of a filter with `ignoredFilterIds`.
+out of a filter with `ignoredFilterIds`, and may read a different `dataset` from the dashboard's.
 
-Composition is a flow grid: widgets render in array order, each spanning `colSpan` of the
-dashboard's 12 columns. Free positioning was rejected because overlapping and out of bounds
-coordinates add failure modes that say nothing new about the promise.
+Widgets are **placed**, not flowed: `layout { x, y, w, h }` puts each one on the 12 column grid,
+so a dashboard looks the way it was arranged whatever order the array happens to be in. The
+decision log records the move from spans to coordinates and what it cost.
 
 The zod schemas in `src/dashboard/_lib/config.schema.ts` are the only definition of this format.
 The loader, the editor form and the hostile corpus all validate against them, so no second,
@@ -120,8 +157,8 @@ One entry point, `loadDashboardConfig(rawText)`, runs six stages in order:
 5. **Dashboard shell validation**: everything except the contents of `widgets`.
 6. **Per widget validation**: each entry validated on its own, then checked for a duplicate id.
 
-Binding resolution against the live dataset schema is stage seven and lands with the data layer.
-It is deliberately separate from validation: a configuration that was valid when it was saved can
+Binding resolution against the live dataset schema is stage seven, and it happens in the data
+layer when a widget asks for data. It is deliberately separate from validation: a configuration that was valid when it was saved can
 stop resolving later because a field was renamed, and those two failures need different wording on
 the tile.
 
@@ -148,8 +185,8 @@ id first.
 | `schemaVersion` missing, fractional or Infinity | Dashboard level error naming the problem                                                          |
 | `__proto__` anywhere, or as a binding field     | Rejected by the shape guard, or by the field name check in the schema                             |
 | `1e999` in a number field                       | `JSON.parse` yields Infinity, the schema rejects it                                               |
-| Filter default outside its own options          | Dashboard level error: a filter that cannot select its default would filter every widget wrongly  |
-| Date range default that ends before it starts   | Dashboard level error                                                                             |
+| Filter default outside its own options          | That filter is dropped with a notice in the filter bar, the rest of the dashboard renders         |
+| Date range default that ends before it starts   | That filter is dropped with a notice in the filter bar                                            |
 | Truncated or trailing comma JSON                | Error screen with the parser message and the original text                                        |
 | A v1 chart with no aggregate                    | The migration leaves it missing, so that one tile reports it                                      |
 
@@ -199,15 +236,15 @@ Three ways to drive it, all the same store:
 
 The client throws one typed error, and the kind decides everything downstream:
 
-| Kind               | Cause                                  | Retried | Shown as             |
-| ------------------ | -------------------------------------- | ------- | -------------------- |
-| `request-failed`   | The source refused                     | Yes     | Error                |
-| `timeout`          | No answer within 8 seconds             | Yes     | Error                |
-| `aborted`          | The caller cancelled                   | No      | Nothing, it is gone  |
-| `corrupt-response` | The payload failed its own schema      | No      | Error                |
-| `unknown-dataset`  | The dataset is gone                    | No      | Unresolvable binding |
-| `unknown-field`    | The field was renamed or never existed | No      | Unresolvable binding |
-| `field-type`       | The field cannot support the aggregate | No      | Unresolvable binding |
+| Kind               | Cause                                  | Retried    | Shown as             |
+| ------------------ | -------------------------------------- | ---------- | -------------------- |
+| `request-failed`   | The source refused                     | Yes, twice | Error                |
+| `timeout`          | No answer within 8 seconds             | Yes, twice | Error                |
+| `aborted`          | The caller cancelled                   | No         | Nothing, it is gone  |
+| `corrupt-response` | The payload failed its own schema      | No         | Error                |
+| `unknown-dataset`  | The dataset is gone                    | No         | Unresolvable binding |
+| `unknown-field`    | The field was renamed or never existed | No         | Unresolvable binding |
+| `field-type`       | The field cannot support the aggregate | No         | Unresolvable binding |
 
 Binding failures are never retried: waiting does not bring back a field that was renamed. They
 are also worded differently on the tile, because the fix is to edit the configuration, not to
@@ -216,14 +253,17 @@ try again.
 ### useWidgetData
 
 One hook maps a widget's query to the state its frame renders: `loading`, `ok`, `empty`,
-`stale`, `error`, `unresolvable-binding`.
+`stale`, `error`, `unresolvable`. Those are the same seven names the frame switches on, listed
+under Rendering: there is one vocabulary, not one per layer.
 
 The query key is `['widget-data', dashboardId, widgetId, chaosEpoch, query]`, and the query
 object carries the dataset, the binding and the filter values. Everything that can change the
 answer is in the key, which is what makes a late answer harmless: it is written to the key it
-was asked under, and that key is no longer the one on screen. The one test in this phase proves
-exactly that, with fake timers: a slow question, a filter change, the fast answer, then the slow
-answer landing afterwards, and the screen still showing the fast one.
+was asked under, and that key is no longer the one on screen.
+`src/dashboard/_hooks/use-widget-data.test.tsx` proves exactly that, with fake timers: a slow
+question, a filter change, the fast answer, then the slow answer landing afterwards, and the
+screen still showing the fast one. It keeps a second observer on the slow question so that answer
+genuinely arrives rather than being cancelled, and it fails if the query key loses the filters.
 
 Two states deserve their wording:
 
@@ -452,10 +492,11 @@ reader gets**: serialise, guard, migrate, validate the shell, validate each widg
 that is half configured shows precisely the tile it would show if it were saved that way, down to
 the wording.
 
-The header says whether there are unsaved changes. Discarding asks first, and leaving edit mode
-with a dirty draft asks too, because until persistence lands there is nowhere for the draft to go.
-Save is present and visibly disabled with a tooltip saying what it is waiting for: a dashboard
-editor with no save button reads as broken.
+The header says whether there are unsaved changes, and **Save** is enabled exactly when there are:
+with a clean draft the button reads _Saved_ and is disabled, because there is nothing to send.
+Saving goes through compare and swap, described under Persistence. Discarding asks first, and so
+does leaving edit mode with unsaved changes, because the draft lives in this tab and nowhere else
+until it is saved.
 
 ### Adding and arranging
 
@@ -463,17 +504,14 @@ The catalogue offers the four widget types. A new widget takes the first free sl
 a default size for its type, and the editor opens on it immediately: bindings are left empty
 rather than guessed, so until a field is chosen the tile says it is not configured yet.
 
-Each tile carries a toolbar: move handle, rename, edit, duplicate, move, resize, remove. Every
-control is an icon button with a name that says which widget it acts on. Remove goes through the
-confirm dialog. The same moves work from the keyboard while focus is anywhere in the tile: arrows
-move, shift and arrows resize, and the move handle is the focus target that announces both the
-current position and how to change it.
+Each tile carries a toolbar: a drag handle, rename, edit, duplicate, remove, and on the tile being
+worked on, arrows for moving and resizing. Every control is an icon button with a name that says
+which widget it acts on, and remove goes through the confirm dialog.
 
-**Every layout change is checked before it is applied**, against the same rules the loader
-validates against: inside the grid, within the row limit, and not on top of another tile. A
-refused change is not applied and says why, naming the widget in the way: _Move refused, that
-would sit on top of "Claims"_. The editor cannot produce a layout that the loader would then
-report as invalid.
+Moving and resizing themselves are described once, under **Arranging the grid**: a pointer drag
+pushes the tiles it lands on, a key press swaps or steps past them, and every arrangement is
+checked against the loader's own placement rules before it reaches the draft. The editor cannot
+produce a layout that the loader would then report as invalid.
 
 ### The form
 
@@ -631,9 +669,10 @@ four things that have no gesture: rename, edit, duplicate, remove.
 
 ### The one approved feature dependency
 
-`react-grid-layout` does the dragging and resizing. It is the only dependency in the project
-taken on for a feature rather than for tooling, and it is approved in CLAUDE.md for three things
-the browser's own primitives do not give:
+`react-grid-layout` does the dragging and resizing. It is the only dependency **added after the
+initial stack was agreed**, for a single feature: Recharts, TanStack Query, nuqs, React Hook Form,
+Zustand and React Router are all feature dependencies too, chosen up front. It is approved in
+CLAUDE.md for three things the browser's own primitives do not give:
 
 - a pointer drag that snaps to grid cells, with a placeholder showing where the tile will land;
 - a resize grip with per widget minimum sizes;
@@ -641,8 +680,10 @@ the browser's own primitives do not give:
   on top of them, and dragging is not bounded by the current content height, so a tile can be
   taken into new space below the last row.
 
-dnd-kit was the obvious alternative and was rejected on the facts: it does no resizing at all and
-no grid snapping, so it would have removed neither piece of the work.
+dnd-kit was the obvious alternative and was rejected on the facts rather than on taste: it has
+snapping modifiers, but it does no resizing at all, and it has no idea what a grid cell is, so the
+collision handling, the push behaviour and the placement rules would all still have been ours to
+write. It would have replaced the smallest part of the work.
 
 ### Arranging without a pointer
 
@@ -654,9 +695,15 @@ are verified against the shipped demo at `/d/demo?edit=1`.
 
 The keyboard and the pointer differ in one way, deliberately. A drag pushes the tiles it lands on
 out of the way, because that is what a pointer gesture means. A keyboard step does not push: two
-tiles of the same size trade places, a smaller one is stepped past to the first free space, and
-the edge of the grid is silent. Pushing on a single key press would rearrange a dashboard several
-tiles away from the one the reader is holding, with no way to see it happen.
+tiles of the same size trade places, and a smaller one is stepped past to the first free space.
+Pushing on a single key press would rearrange a dashboard several tiles away from the one the
+reader is holding, with no way to see it happen.
+
+Every keyboard arrangement is announced in a polite live region, including the ones that change
+nothing: _Billed is at column 4, row 2_, _Claims swapped places with Line items per claim_, or
+_Billed: that would leave the top left of the grid_. A pointer drag shows its own result; a key
+press that does nothing shows nothing, so silence at the edge of the grid would have told a screen
+reader user only that their key press had been ignored.
 
 **What the library is not allowed to decide.** It moves tiles; it does not decide what a valid
 layout is. Every arrangement it produces is checked against the loader's own placement rules
@@ -673,20 +720,29 @@ about it.
 
 ## UI primitives
 
-There is no component library in this project. Every control is a native element styled with
-Tailwind tokens, and the handful of things with no native equivalent are written by hand into
-`src/components/ui/` in the shadcn style, one file per primitive.
+There is no component library in this project. Controls are native elements styled with Tailwind
+tokens wherever a native element does the job, and the handful of things with no native
+equivalent are written by hand into `src/components/ui/` in the shadcn style, one file per
+primitive.
 
-| Surface               | Built from                                                         |
-| --------------------- | ------------------------------------------------------------------ |
-| Select filter         | `<select>`                                                         |
-| Multi-select filter   | Toggle `<button aria-pressed>` chips inside a `<fieldset><legend>` |
-| Date range filter     | Two `<input type="date">`                                          |
-| Search filter         | `<input type="search">`                                            |
-| Widget configuration  | `<details>` and `<summary>`                                        |
-| Table                 | `<table>` with `aria-sort` and header buttons                      |
-| Modal, confirm dialog | `<dialog>` with `showModal()`, wrapped in `src/components/ui`      |
-| Toasts                | Two `aria-live` regions over a Zustand slice                       |
+The one place a native element was given up is the option list. A `<select>` cannot be searched,
+and every list that comes out of data here can be four values today and four hundred next week,
+so those go through one hand written dropdown instead. It is still native inside: a trigger
+button, and radios or checkboxes in a panel, so selection and keyboard behaviour remain the
+browser's. Short fixed lists, such as the aggregates or the chart types, are still a `<select>`,
+because a search box over six options is noise.
+
+| Surface                                                         | Built from                                                                                                    |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Select and multi-select filter                                  | `searchable-select.tsx`: a trigger button and a panel of native radios or checkboxes, with a debounced search |
+| Field pickers, editor and chaos                                 | the same `searchable-select.tsx`                                                                              |
+| Short fixed lists (aggregate, chart type, tone, sort direction) | `<select>`                                                                                                    |
+| Date range filter                                               | Two `<input type="date">`, committed on blur                                                                  |
+| Search filter                                                   | `<input type="search">`, debounced                                                                            |
+| Widget configuration                                            | An information button on tiles showing data, `<details>` inside a failure panel                               |
+| Table                                                           | `<table>` with `aria-sort` and header buttons                                                                 |
+| Modal, confirm dialog                                           | `<dialog>` with `showModal()`, wrapped in `src/components/ui`                                                 |
+| Toasts                                                          | Two `aria-live` regions over a Zustand slice                                                                  |
 
 The dialog wrapper adds what the element does not do on its own: closing on a backdrop click,
 returning focus to whatever opened it, locking the page behind it, and wiring `aria-labelledby`
@@ -702,15 +758,15 @@ dismiss button.
 
 ### Phase 1: project setup
 
-| Decision                                                        | Why                                                                                                                                                                                                                     |
-| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| React 19 with React Router 8                                    | The current router major requires React 19.2 or newer. Chosen over pinning the router back a major version to stay on supported, current APIs.                                                                          |
-| TypeScript strict plus `noUncheckedIndexedAccess`               | The renderer walks arbitrary user data. `row[column]` is genuinely `T \| undefined`, and the type system should say so rather than let it slip.                                                                         |
-| `exactOptionalPropertyTypes` tried, then dropped                | It fights third party types (Recharts props, React Hook Form defaults, query options) for little gain here: zod already guards the boundary where an absent field and an explicit `undefined` differ.                   |
-| oxlint rather than ESLint                                       | Same rules that matter here (`no-console`, `react/no-danger`, hooks rules, `no-explicit-any`) at a fraction of the run time.                                                                                            |
-| Import order enforced by a Prettier plugin                      | oxlint has no `import/order` rule, so ordering is autofixed at format time and verified by `format:check` instead of being an unchecked convention.                                                                     |
-| Semantic colour tokens only, defined in `src/styles/tokens.css` | State colours (danger, warning, stale, success) have to mean the same thing in every widget, in light and dark, or the visible-failure states become unreadable.                                                        |
-| TanStack Query retries once, does not refetch on focus          | A single retry absorbs the fake data layer's transient failures; an error that survives a retry is real and gets shown. Refetch on focus would hide staleness by silently fixing it when the reviewer looks at the tab. |
+| Decision                                                                                                          | Why                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| React 19 with React Router 8                                                                                      | The current router major requires React 19.2 or newer. Chosen over pinning the router back a major version to stay on supported, current APIs.                                                                                                                                                                                                                                                      |
+| TypeScript strict plus `noUncheckedIndexedAccess`                                                                 | The renderer walks arbitrary user data. `row[column]` is genuinely `T \| undefined`, and the type system should say so rather than let it slip.                                                                                                                                                                                                                                                     |
+| `exactOptionalPropertyTypes` tried, then dropped                                                                  | It fights third party types (Recharts props, React Hook Form defaults, query options) for little gain here: zod already guards the boundary where an absent field and an explicit `undefined` differ.                                                                                                                                                                                               |
+| oxlint rather than ESLint                                                                                         | Same rules that matter here (`no-console`, `react/no-danger`, hooks rules, `no-explicit-any`) at a fraction of the run time.                                                                                                                                                                                                                                                                        |
+| Import order enforced by a Prettier plugin                                                                        | oxlint has no `import/order` rule, so ordering is autofixed at format time and verified by `format:check` instead of being an unchecked convention.                                                                                                                                                                                                                                                 |
+| Semantic colour tokens only, defined in `src/styles/tokens.css`                                                   | State colours (danger, warning, stale, success) have to mean the same thing in every widget, in light and dark, or the visible-failure states become unreadable.                                                                                                                                                                                                                                    |
+| TanStack Query retries once by default, does not refetch on focus, **widget queries later raised to two retries** | A retry absorbs the fake data layer's transient failures; an error that survives them is real and gets shown. Refetch on focus would hide staleness by silently fixing it when the reviewer looks at the tab. The client default of one retry still applies to anything that does not set its own; widget and storage queries allow three attempts in total, which is what `retrying (n/3)` counts. |
 
 ### Phase 2: configuration layer
 
@@ -741,17 +797,18 @@ dismiss button.
 
 ### Phase 4: rendering
 
-| Decision                                               | Why                                                                                                                                                                                |
-| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| One state union, rendered in exactly one component     | If a widget body could render its own loading or error state, the promise would have to be re-checked in four places and would quietly stop holding in the fifth.                  |
-| A table resolves each column on its own                | One renamed column costing the reader nine good ones is a worse failure than the rename. The dead column is marked in its own header, so nothing is hidden by keeping the rest.    |
-| A metric or a chart fails whole                        | Unlike a column, a metric with a missing field has nothing left to show, and a chart missing its measure would render an axis with no meaning.                                     |
-| A capped row window is stated on the tile              | Sorting and paging in the browser is quick, but a reader who can page through 200 rows will assume there are 200. The footer says how many matched.                                |
-| Formatting is resolved against the field's unit        | Currency over a unitless number is a presentation with no correct answer. Refusing it by name beats a plain number that a claims reader reads as dollars anyway, off by a hundred. |
-| Markdown is a parser, not a renderer of HTML           | The text widget is the one place configuration content reaches the DOM. Tokens to React elements has no HTML path at all, so there is no sanitiser to get wrong.                   |
-| Layout collisions are per widget invalid, not a reflow | A grid that reflows to fit a broken layout shows a dashboard nobody arranged, and the reader cannot tell which one they are looking at.                                            |
-| Recharts is lazy loaded behind a same size skeleton    | It is 380 KB of the bundle for a widget type a dashboard may not even use, and a skeleton that matches the chart keeps the layout still while it arrives.                          |
-| Skeletons instead of spinners                          | A spinner says only that something is happening. A skeleton in the shape of the widget says what is coming and keeps the page from jumping when it arrives.                        |
+| Decision                                                     | Why                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| One state union, rendered in exactly one component           | If a widget body could render its own loading or error state, the promise would have to be re-checked in four places and would quietly stop holding in the fifth.                                                                                                                                                                                                                       |
+| A table resolves each column on its own                      | One renamed column costing the reader nine good ones is a worse failure than the rename. The dead column is marked in its own header, so nothing is hidden by keeping the rest.                                                                                                                                                                                                         |
+| A metric or a chart fails whole                              | Unlike a column, a metric with a missing field has nothing left to show, and a chart missing its measure would render an axis with no meaning.                                                                                                                                                                                                                                          |
+| A capped row window is stated on the tile                    | Sorting and paging in the browser is quick, but a reader who can page through 200 rows will assume there are 200. The footer says how many matched.                                                                                                                                                                                                                                     |
+| Formatting is resolved against the field's unit              | Currency over a unitless number is a presentation with no correct answer. Refusing it by name beats a plain number that a claims reader reads as dollars anyway, off by a hundred.                                                                                                                                                                                                      |
+| Markdown is a parser, not a renderer of HTML                 | The text widget is the one place configuration content reaches the DOM. Tokens to React elements has no HTML path at all, so there is no sanitiser to get wrong.                                                                                                                                                                                                                        |
+| Layout collisions are per widget invalid, not a reflow       | A grid that reflows to fit a broken layout shows a dashboard nobody arranged, and the reader cannot tell which one they are looking at.                                                                                                                                                                                                                                                 |
+| Recharts is lazy loaded behind a same size skeleton          | It is 380 KB of the bundle for a widget type a dashboard may not even use, and a skeleton that matches the chart keeps the layout still while it arrives.                                                                                                                                                                                                                               |
+| Skeletons instead of spinners                                | A spinner says only that something is happening. A skeleton in the shape of the widget says what is coming and keeps the page from jumping when it arrives.                                                                                                                                                                                                                             |
+| Widgets are placed at coordinates, not flowed in array order | A flow grid, where each widget carried a `colSpan` and took the next free space, made the dashboard depend on the order of the array: moving a widget in the file rearranged the page. `layout { x, y, w, h }` in v3 makes the arrangement explicit and reproducible, and the cost is a new failure mode, two widgets claiming one cell, which is handled as a per widget invalid tile. |
 
 ### Phase 5: filters
 
@@ -768,11 +825,12 @@ dismiss button.
 
 ### Decisions on UI primitives
 
-| Decision                                                  | Why                                                                                                                                                                              |
-| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| No component library, native elements first               | A `<select>`, a `<details>` and a `<fieldset>` already carry the keyboard and screen reader behaviour a library would re-implement, and they cost nothing to ship.               |
-| Modal and toasts hand written rather than Radix or sonner | The two things actually needed are a dialog and a live region. `<dialog>` supplies the hard half of the first, and the second is twenty lines, so three dependencies buy little. |
-| The chip group is a fieldset, not a labelled div          | A `<label for>` pointing at a div names nothing. A fieldset with a legend gives the group a real accessible name, which is what a screen reader reads before the chips.          |
+| Decision                                                                      | Why                                                                                                                                                                                                         |
+| ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| No component library, native elements first                                   | A `<select>`, a `<details>` and a `<fieldset>` already carry the keyboard and screen reader behaviour a library would re-implement, and they cost nothing to ship.                                          |
+| Modal and toasts hand written rather than Radix or sonner                     | The two things actually needed are a dialog and a live region. `<dialog>` supplies the hard half of the first, and the second is twenty lines, so three dependencies buy little.                            |
+| The chip group is a fieldset, not a labelled div, **later replaced entirely** | A `<label for>` pointing at a div names nothing, so the chips were grouped in a fieldset with a legend. Chips themselves then went: readable at four values, unusable at forty, and nothing to search.      |
+| One searchable dropdown for every list that comes from data                   | A native select cannot be searched and chips cannot be scanned. Keeping the panel's contents native, radios and checkboxes, keeps selection and keyboard behaviour the browser's rather than reimplemented. |
 
 ### Phase 6: the editor
 
@@ -814,6 +872,136 @@ dismiss button.
 | Bidi controls are stripped and text is isolated in bdi         | A right to left override in a title rearranges the line around it, so a widget can be made to read as something it is not, with no script involved at all.          |
 | The prototype check runs after the whole corpus                | Pollution is stateful: it is not enough for each file to be rejected, the process has to be clean once all of them have been through it.                            |
 
+### Arranging the grid
+
+| Decision                                                     | Why                                                                                                                                                                                                                                    |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| react-grid-layout adopted for dragging and resizing          | A pointer drag that snaps to cells, a resize grip with minimum sizes, and push semantics are each a weekend of edge cases, and none of them is what this assessment is about. It is the only dependency added after the initial stack. |
+| Refusing a colliding move, **replaced by pushing**           | The first editor refused any move onto an occupied cell, which was correct and unusable: a full row of metrics could not be rearranged at all, because every neighbouring cell was taken. A pointer drag now pushes.                   |
+| The pointer pushes, the keyboard swaps or steps past         | Pushing is what a drag means, and the reader can see it happen. A key press that rearranged three tiles at the other end of the grid would be a change nobody watched, so a key press moves one tile and says what it did.             |
+| Layouts are committed when a gesture ends, not while it runs | Committing every intermediate layout would mark a draft dirty as soon as the editor opened, and would write arrangements nobody chose. `onDragStop` and `onResizeStop` are the only commit points.                                     |
+| Every arrangement is re-validated before it is applied       | The library decides where a tile goes; it does not decide what is valid. An arrangement that would not load is not applied, and the grid snaps back to the last one that would.                                                        |
+
+## Guarantees and non-guarantees
+
+What this system promises, in one place. Each line is explained somewhere above.
+
+**Guarantees**
+
+- A widget shows current data, or it shows what is wrong with it. There is no third state.
+- One bad widget cannot take down the dashboard around it: validation, binding resolution,
+  rendering and crashes are all per widget.
+- A configuration is never partly applied. Either the dashboard loads and every widget reports
+  its own verdict, or the load fails with a reason and the original text on screen.
+- Stale data is labelled with the time it was fetched and the failure that stopped the refresh,
+  and is never presented as current.
+- Empty is distinguished from zero. A missing value is never rendered as `0`.
+- An answer to a question that is no longer being asked cannot appear on screen: every input to
+  the answer is in the query key.
+- A save never silently overwrites another save. Compare and swap refuses, and the conflict is
+  shown per widget with the choice left to a person.
+- A failed save leaves the draft exactly as it was, and says so.
+- History is append only. Restoring a revision writes a new one.
+- The editor cannot produce a configuration the reader's loader would reject: same schemas, same
+  placement rules, same loader for the preview.
+- Configuration text cannot reach the DOM as markup: no HTML path, no links, no images, bidi
+  controls stripped, `dangerouslySetInnerHTML` banned by lint.
+- Every failure is reachable on purpose: latency, refusals, timeouts, corruption, renamed fields,
+  retyped fields and dropped datasets are all controls, not accidents.
+
+**Non-guarantees**
+
+- No live collaboration. No presence, no shared cursors, no streaming edits.
+- No automatic merge. A conflict is a decision, not an algorithm.
+- No sharing between browsers or machines: storage is localStorage, per browser and per origin.
+- No authentication, no authorisation, no audit trail. Every reader here is the same person.
+- No server side aggregation: the data layer is in memory, and a table sees a bounded window of
+  rows rather than an unbounded result set.
+- No guarantee that a dashboard renders identically at every viewport. The grid is responsive in
+  width only; twelve columns on a phone is a known gap.
+- No offline queue. A save that fails is retried by a person, not by a background worker.
+- No protection against a reader who edits their own localStorage: it is read back as input and
+  reported honestly, which is not the same as being tamper proof.
+
+## Security
+
+The threat model here is **a configuration is untrusted input**, whoever it came from: a URL, a
+file, storage, or an earlier version of this app. The defences are spread through the document,
+so they are gathered here with pointers.
+
+| Surface                       | What is done                                                                                                                                                                                                               | Where                                 |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| Script injection through text | The text widget parses a tiny markdown subset to React elements. No HTML path, no links, no images, so a `javascript:` URL has nowhere to go. `dangerouslySetInnerHTML` is banned by lint.                                 | Rendering, per widget decisions       |
+| Prototype pollution           | `__proto__`, `constructor` and `prototype` are rejected as keys anywhere in a document, and as binding field names, before validation runs. The hostile runner asserts `Object.prototype` is clean after the whole corpus. | The load pipeline, the hostile corpus |
+| Denial of service by document | Size, depth, widget count, filter count and string lengths are all capped before validation. The depth walk is iterative, so a deep document cannot exhaust the stack on its way to being rejected.                        | Limits                                |
+| Visual spoofing               | Bidi control characters are stripped and configuration text renders inside `<bdi>`, so a title cannot reorder the line around it.                                                                                          | The hostile corpus                    |
+| The URL as input              | Every filter parameter is validated with the same zod schemas the configuration uses. An invalid one is ignored, named, and removed from the address bar.                                                                  | The URL is input                      |
+| Storage as input              | Stored records are validated on read and the configuration inside them goes through the same loader as a pasted one. Corrupt storage is a screen with a reason.                                                            | Persistence                           |
+| Responses as input            | The data layer validates its own payloads against zod schemas, and the corrupt-next-response control exists to prove it.                                                                                                   | The data layer                        |
+
+What is **not** covered: there is no server, so there is no authentication, no authorisation, no
+rate limiting and no CSRF surface. A reader can edit their own localStorage and their own URL, and
+the answer to both is the same, they are read back as input.
+
+## Accessibility
+
+- **Native elements first.** `<select>`, `<details>`, `<fieldset>`, `<table>` with `aria-sort`,
+  `<dialog>`, real `<button>`s. Where a control is hand written, the parts a person interacts
+  with are still native: the searchable dropdown is a trigger button and a panel of radios or
+  checkboxes.
+- **Dialogs** come from `<dialog>` with `showModal()`, which supplies the top layer, the inert
+  background, the focus trap and Escape. The wrapper adds the backdrop click, focus returning to
+  whatever opened it, the page lock behind it, and `aria-labelledby` and `aria-describedby`.
+- **Toasts** live in two live regions that exist from the first render: successes are polite,
+  failures are assertive. Each has a dismiss button, and the countdown pauses on hover and on
+  focus, so a message cannot vanish while it is being read.
+- **Colour never carries meaning alone.** Every state badge is an icon plus words, and selected
+  options carry a check as well as a fill.
+- **Arranging works without a pointer.** Toolbar arrows on the selected tile, and the arrow keys
+  while focus is anywhere in the tile, both do what a drag does. Every keyboard arrangement is
+  announced in a polite live region, including the presses that do nothing because the tile is
+  against the edge of the grid.
+- **Failure states are announced.** Error and warning panels carry `role="alert"`; the filter
+  bar's notices and the cross tab banner are `<output>` elements, which are polite live regions.
+
+Known gaps, stated rather than hidden:
+
+- **react-grid-layout's drag handle and resize grip are pointer only.** The keyboard path exists
+  alongside them and is tested, but the two are not the same control, so a keyboard user and a
+  pointer user are doing different things to reach the same result.
+- **The searchable dropdown is a disclosure, not a listbox.** Tab reaches the trigger, then the
+  search box, then each option in turn; there is no roving `tabindex`, no arrow key navigation
+  between checkboxes, no typeahead, and opening it does not move focus into the panel. Native
+  radios do get arrow keys, which makes single select better off than multi select here.
+- **No focus trap inside the dropdown panel**: Tab can leave it while it is open, which closes it
+  on the next outside pointer event but not on the Tab itself.
+- **The dashboard is responsive in width only.** Twelve columns are twelve columns on a phone.
+- **No reduced motion handling** for the grid's drag transitions.
+- **Charts are pictures.** Recharts renders SVG with tooltips, and the underlying numbers are not
+  exposed as a table for a screen reader.
+
+## What I would do next
+
+Distinct from the known limits above, which are deliberate. These are the things that are missing
+because the clock ran out.
+
+1. **Make the dropdown a real listbox**: roving `tabindex`, arrow keys, typeahead, focus moved
+   into the panel on open. It is the largest accessibility gap and the one most likely to be hit.
+2. **Page the table at the data layer** so the row window stops being a cap, and each page is its
+   own request with its own loading, error and stale states.
+3. **A widget level "explain this number"**: the query that produced it, the filters applied, the
+   rows matched, the time fetched. Most of the pieces are already on the tile; they are not in one
+   place.
+4. **Per widget refresh intervals**, with the same honesty about staleness that the manual path
+   has.
+5. **A REST implementation of the store interface**, which is the one file that stands between
+   this and real sharing, plus the conflict path exercised against a server clock rather than a
+   tab.
+6. **Reduced motion and a narrow viewport layout**, both of which are currently assumptions rather
+   than decisions.
+7. **A performance pass with a large configuration**: fifty widgets against a slow source, to find
+   out whether the per widget query fan out needs batching.
+
 ## Known limits
 
 Things that are deliberate rather than unfinished, and what each one would take to lift.
@@ -834,3 +1022,24 @@ Things that are deliberate rather than unfinished, and what each one would take 
   tile, given that a field can disappear long after the configuration was valid.
 - Whether a widget that ignores a filter should say so on the tile, since a reader comparing two
   tiles under the same filter bar has no other way to know.
+
+## Appendix: how this was built
+
+Nine phases, each one ending with a green `npm run check` and a commit. This document was written
+along the way rather than reconstructed afterwards, which is why the decision log records a few
+decisions that were later reversed, with the reversal and the reason.
+
+| Phase                                     | State       |
+| ----------------------------------------- | ----------- |
+| 1. Project setup                          | Done        |
+| 2. Config schema, migrations, tests       | Done        |
+| 3. Data layer, chaos controls, fetch hook | Done        |
+| 4. Rendering and the four widget types    | Done        |
+| 5. Dashboard filters                      | Done        |
+| 6. Widget editor                          | Done        |
+| 7. Persistence, revisions, conflicts      | Done        |
+| 8. Hostile configuration corpus           | Done        |
+| 9. Documentation and self-review          | In progress |
+
+Outstanding at the time of writing: the README's instructions for exercising the system, and the
+self review. Everything above describes what is in the repository now.

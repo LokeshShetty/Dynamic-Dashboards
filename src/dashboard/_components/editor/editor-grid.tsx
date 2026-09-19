@@ -118,6 +118,11 @@ export function EditorGrid({ dashboardId, filters, onLeave, onReloadSaved }: Pro
         onDone={() => (editor.isDirty ? setDialog({ kind: 'leave' }) : leave())}
       />
 
+      {/* Arranging with the keyboard changes the grid and nothing else, so it says what it did. */}
+      <output aria-live="polite" aria-label="Arranging" className="sr-only">
+        {editor.announcement}
+      </output>
+
       <DashboardGrid
         shell={preview.shell}
         slots={preview.slots}
