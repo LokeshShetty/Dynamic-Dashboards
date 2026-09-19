@@ -1,8 +1,10 @@
 import { useId } from 'react'
 
+import { FORM_CONTROL_CLASS } from '@/constants/ui'
+
 import { NUMBER_STYLES } from '../../../_constants'
 import type { NumberFormat } from '../../../_lib/config.schema'
-import { FORM_CONTROL_CLASS, FormRow } from './form-row'
+import { FormRow } from './form-row'
 
 type Props = {
   value: NumberFormat | undefined

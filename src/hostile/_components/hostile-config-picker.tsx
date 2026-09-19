@@ -2,11 +2,10 @@ import { useId } from 'react'
 
 import { Bug } from 'lucide-react'
 
+import { CONTROL_CLASS } from '@/constants/ui'
+
 import { useHostileParam } from '../_hooks/use-hostile-param'
 import { HOSTILE_CONFIG_NAMES } from '../_lib/hostile-configs'
-
-const SELECT_CLASS =
-  'border-border bg-surface-raised text-fg h-7 w-full rounded-md border px-1 text-xs'
 
 /**
  * Opens one of the files in hostile-configs/ in place of the stored dashboard. The picker reads
@@ -24,7 +23,7 @@ export function HostileConfigPicker() {
       </label>
       <select
         id={controlId}
-        className={SELECT_CLASS}
+        className={CONTROL_CLASS}
         value={file ?? ''}
         onChange={(event) => (event.target.value === '' ? close() : open(event.target.value))}
       >

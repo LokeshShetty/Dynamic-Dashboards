@@ -97,3 +97,19 @@ export type WidgetFilterContext = {
   /** Field name to the label the reader sees, so a skipped filter can be named on the tile. */
   labels: Record<string, string>
 }
+
+/** Where one tile sits on the grid, and how small it is allowed to get. */
+export type GridPlacement = {
+  key: string
+  x: number
+  y: number
+  w: number
+  h: number
+  minW: number
+  minH: number
+  maxW: number
+  maxH: number
+}
+
+/** One line or set of bars on a chart, named for the legend. */
+export type ChartSeries = { key: string; label: string }

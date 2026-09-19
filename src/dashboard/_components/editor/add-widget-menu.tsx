@@ -4,12 +4,8 @@ import { Button } from '@/components/ui/button'
 
 import { WIDGET_KINDS, type WidgetKind } from '../../_constants'
 
-const ICONS = {
-  metric: Hash,
-  table: Table2,
-  chart: BarChart3,
-  text: FileText,
-} as const
+/** Which icon stands for which widget kind. Icons are components, so they stay with the menu. */
+const KIND_ICONS = { metric: Hash, table: Table2, chart: BarChart3, text: FileText } as const
 
 type Props = { onAdd: (kind: WidgetKind) => void }
 
@@ -19,7 +15,7 @@ export function AddWidgetMenu({ onAdd }: Props) {
     <div className="flex flex-wrap items-center gap-1">
       <span className="text-fg-muted text-xs">Add</span>
       {WIDGET_KINDS.map((kind) => {
-        const Icon = ICONS[kind]
+        const Icon = KIND_ICONS[kind]
         return (
           <Button key={kind} size="sm" onClick={() => onAdd(kind)}>
             <Icon aria-hidden="true" className="size-3" />

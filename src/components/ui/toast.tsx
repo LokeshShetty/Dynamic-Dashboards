@@ -1,20 +1,30 @@
 import { useEffect, useRef, useState } from 'react'
 
+import { cva } from 'class-variance-authority'
 import { AlertTriangle, CheckCircle2, Info, X } from 'lucide-react'
 
+import { TOAST_DISMISS_MS } from '@/constants/ui'
 import { useAppStore } from '@/lib/store'
 import type { Toast, ToastTone } from '@/lib/store/slices/toast.slice'
-import { cn } from '@/lib/utils'
 
 import { Button } from './button'
 
-const AUTO_DISMISS_MS = 5000
+const toastVariants = cva(
+  'text-fg pointer-events-auto flex items-start gap-2 rounded-md border p-3 shadow-lg',
+  {
+    variants: {
+      tone: {
+        success: 'border-success bg-success-surface',
+        error: 'border-danger bg-danger-surface',
+        info: 'border-border bg-surface-raised',
+      },
+    },
+    defaultVariants: { tone: 'info' },
+  },
+)
 
-const TONE = {
-  success: { icon: CheckCircle2, className: 'border-success bg-success-surface' },
-  error: { icon: AlertTriangle, className: 'border-danger bg-danger-surface' },
-  info: { icon: Info, className: 'border-border bg-surface-raised' },
-} as const
+/** Icons are components, so they stay with the component that renders them. */
+const TONE_ICONS = { success: CheckCircle2, error: AlertTriangle, info: Info } as const
 
 /**
  * Two live regions, both present from the first render so that anything inserted into them is
@@ -46,7 +56,7 @@ export function ToastRegion() {
 function ToastItem({ toast }: { toast: Toast }) {
   const dismissToast = useAppStore((state) => state.dismissToast)
   const [isPaused, setIsPaused] = useState(false)
-  const remainingRef = useRef(AUTO_DISMISS_MS)
+  const remainingRef = useRef(TOAST_DISMISS_MS)
 
   useEffect(() => {
     if (isPaused) return
@@ -62,14 +72,11 @@ function ToastItem({ toast }: { toast: Toast }) {
 
   const pause = () => setIsPaused(true)
   const resume = () => setIsPaused(false)
-  const { icon: Icon, className } = TONE[toast.tone satisfies ToastTone]
+  const Icon = TONE_ICONS[toast.tone satisfies ToastTone]
 
   return (
     <div
-      className={cn(
-        'text-fg pointer-events-auto flex items-start gap-2 rounded-md border p-3 shadow-lg',
-        className,
-      )}
+      className={toastVariants({ tone: toast.tone })}
       onMouseEnter={pause}
       onMouseLeave={resume}
       onFocusCapture={pause}

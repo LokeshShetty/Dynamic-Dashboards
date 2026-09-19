@@ -47,9 +47,6 @@ export function FilterField({
   )
 }
 
-export const FILTER_CONTROL_CLASS =
-  'border-border bg-surface-raised text-fg h-8 w-full rounded-md border px-2 text-xs'
-
 /** The control is a data surface, so it has a loading shape of its own rather than a spinner. */
 export function FilterSkeleton() {
   return <div className="bg-surface-muted h-8 w-full animate-pulse rounded-md" />

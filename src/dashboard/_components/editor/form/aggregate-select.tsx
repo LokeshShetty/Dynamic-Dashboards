@@ -1,9 +1,10 @@
 import { useId } from 'react'
 
 import type { Aggregate, FieldType } from '@/constants/data'
+import { FORM_CONTROL_CLASS } from '@/constants/ui'
 
 import { aggregatesFor } from '../../../_lib/widget-form'
-import { FORM_CONTROL_CLASS, FormRow } from './form-row'
+import { FormRow } from './form-row'
 
 type Props = {
   label: string

@@ -1,3 +1,5 @@
+import { cva } from 'class-variance-authority'
+
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -11,11 +13,16 @@ type Props = {
   className?: string
 }
 
-const TONE_CLASS = {
-  neutral: 'border-border bg-surface-muted',
-  warning: 'border-warning bg-warning-surface',
-  danger: 'border-danger bg-danger-surface',
-} as const
+const noticeVariants = cva('flex flex-col items-start gap-2 rounded-md border p-3', {
+  variants: {
+    tone: {
+      neutral: 'border-border bg-surface-muted',
+      warning: 'border-warning bg-warning-surface',
+      danger: 'border-danger bg-danger-surface',
+    },
+  },
+  defaultVariants: { tone: 'neutral' },
+})
 
 /**
  * The words under a failed state. They name the field, the dataset or the widget that caused
@@ -25,11 +32,7 @@ export function WidgetStateNotice({ tone, message, issues, retry, className }: P
   return (
     <div
       role={tone === 'neutral' ? undefined : 'alert'}
-      className={cn(
-        'flex flex-col items-start gap-2 rounded-md border p-3',
-        TONE_CLASS[tone],
-        className,
-      )}
+      className={cn(noticeVariants({ tone }), className)}
     >
       <p className="text-fg text-sm">{message}</p>
 

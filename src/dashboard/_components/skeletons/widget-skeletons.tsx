@@ -5,6 +5,7 @@
  * reader can tell a loading table from a loading chart. There is no generic spinner anywhere
  * in this app.
  */
+/** Every skeleton is bars of this shape, which is styling rather than data. */
 const BAR = 'bg-surface-muted animate-pulse rounded'
 
 export function MetricSkeleton() {

@@ -1,8 +1,9 @@
 import { useId } from 'react'
 
+import { FORM_CONTROL_CLASS } from '@/constants/ui'
 import { DATASET_IDS } from '@/data/_constants'
 
-import { FORM_CONTROL_CLASS, FormRow } from './form-row'
+import { FormRow } from './form-row'
 
 type Props = {
   value: string

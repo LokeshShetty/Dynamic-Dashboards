@@ -1,9 +1,11 @@
 import { useId } from 'react'
 
-import { SearchableSelect, type SelectOption } from '@/components/ui/searchable-select'
+import { SearchableSelect } from '@/components/ui/searchable-select'
+import { FORM_CONTROL_CLASS } from '@/constants/ui'
+import type { SelectOption } from '@/types/ui'
 
 import type { DatasetSchemaState } from '../../../_hooks/use-dataset-schema'
-import { FORM_CONTROL_CLASS, FormRow } from './form-row'
+import { FormRow } from './form-row'
 
 type Props = {
   label: string

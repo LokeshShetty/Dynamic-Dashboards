@@ -1,1 +1,1 @@
-export { WidgetGrid, type GridPlacement } from './widget-grid'
+export { WidgetGrid } from './widget-grid'

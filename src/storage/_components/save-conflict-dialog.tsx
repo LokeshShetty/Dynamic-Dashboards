@@ -5,6 +5,7 @@ import { GitCompare } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { Dialog } from '@/components/ui/dialog'
+import { CONFLICT_CHANGE_LABELS } from '@/dashboard/_constants'
 
 import { diffConfigs } from '../_lib/diff'
 import type { DashboardRecord } from '../_types'
@@ -18,12 +19,6 @@ type Props = {
   onOverwrite: () => void
   onKeepEditing: () => void
 }
-
-const CHANGE_LABEL = {
-  'only-theirs': 'only in the saved version',
-  'only-mine': 'only in your draft',
-  different: 'different in both',
-} as const
 
 /**
  * What a conflict is here: the stored version moved while this draft was being edited. Nothing
@@ -87,7 +82,7 @@ export function SaveConflictDialog({
                 <li key={change.id} className="flex items-center justify-between gap-3 p-2">
                   <span className="text-fg truncate">{change.title}</span>
                   <span className="text-fg-muted shrink-0 text-xs">
-                    {CHANGE_LABEL[change.change]}
+                    {CONFLICT_CHANGE_LABELS[change.change]}
                   </span>
                 </li>
               ))}

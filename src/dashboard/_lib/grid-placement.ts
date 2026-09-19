@@ -1,6 +1,5 @@
-import type { GridPlacement } from '../_components/widget-grid'
 import { CONFIG_LIMITS } from '../_constants'
-import type { WidgetSlot } from '../_types'
+import type { GridPlacement, WidgetSlot } from '../_types'
 import type { Widget } from './config.schema'
 
 /** What each kind needs to stay readable, so a tile cannot be dragged down to a sliver. */

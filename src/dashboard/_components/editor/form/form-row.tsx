@@ -11,9 +11,6 @@ type Props = {
   className?: string
 }
 
-export const FORM_CONTROL_CLASS =
-  'border-border bg-surface-raised text-fg h-8 w-full rounded-md border px-2 text-sm'
-
 export function FormRow({ label, controlId, error, hint, children, className }: Props) {
   return (
     <div className={cn('flex flex-col gap-1', className)}>

@@ -5,13 +5,14 @@ import {
   ArrowUp,
   Copy,
   GripVertical,
-  Maximize2,
   Pencil,
   Trash2,
   Type,
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+
+import { TILE_MOVES, TILE_RESIZES } from '../../_constants'
 
 type Props = {
   title: string
@@ -33,20 +34,6 @@ type Props = {
  * how the grid is arranged without a mouse. They appear on the tile being worked on, because
  * thirteen buttons on every tile is a wall rather than an editor.
  */
-const MOVES = [
-  { label: 'left', icon: ArrowLeft, dx: -1, dy: 0 },
-  { label: 'right', icon: ArrowRight, dx: 1, dy: 0 },
-  { label: 'up', icon: ArrowUp, dx: 0, dy: -1 },
-  { label: 'down', icon: ArrowDown, dx: 0, dy: 1 },
-] as const
-
-const RESIZES = [
-  { label: 'narrower', icon: ArrowLeft, dw: -1, dh: 0, className: 'size-3 opacity-70' },
-  { label: 'wider', icon: ArrowRight, dw: 1, dh: 0, className: 'size-3 opacity-70' },
-  { label: 'shorter', icon: ArrowUp, dw: 0, dh: -1, className: 'size-3 opacity-70' },
-  { label: 'taller', icon: Maximize2, dw: 0, dh: 1, className: 'size-3 opacity-70' },
-] as const
-
 export function WidgetToolbar({
   title,
   position,
@@ -87,33 +74,50 @@ export function WidgetToolbar({
         <>
           <span className="bg-border mx-0.5 h-4 w-px" aria-hidden="true" />
 
-          {MOVES.map((move) => (
+          {TILE_MOVES.map((move) => (
             <Button
               key={move.label}
               variant="ghost"
               size="sm"
               aria-label={`Move ${title} ${move.label}`}
-              onClick={() => onMove(move.dx, move.dy)}
+              onClick={() => onMove(move.x, move.y)}
             >
-              <move.icon aria-hidden="true" className="size-3" />
+              <MoveIcon direction={move.label} />
             </Button>
           ))}
 
           <span className="bg-border mx-0.5 h-4 w-px" aria-hidden="true" />
 
-          {RESIZES.map((resize) => (
+          {TILE_RESIZES.map((resize) => (
             <Button
               key={resize.label}
               variant="ghost"
               size="sm"
               aria-label={`Make ${title} ${resize.label}`}
-              onClick={() => onResize(resize.dw, resize.dh)}
+              onClick={() => onResize(resize.w, resize.h)}
             >
-              <resize.icon aria-hidden="true" className={resize.className} />
+              <ResizeIcon direction={resize.label} />
             </Button>
           ))}
         </>
       ) : null}
     </div>
   )
+}
+
+/** The arrow that matches a direction, kept beside the buttons that use it. */
+function MoveIcon({ direction }: { direction: (typeof TILE_MOVES)[number]['label'] }) {
+  const Icon = { left: ArrowLeft, right: ArrowRight, up: ArrowUp, down: ArrowDown }[direction]
+  return <Icon aria-hidden="true" className="size-3" />
+}
+
+function ResizeIcon({ direction }: { direction: (typeof TILE_RESIZES)[number]['label'] }) {
+  const Icon = {
+    narrower: ArrowLeft,
+    wider: ArrowRight,
+    shorter: ArrowUp,
+    taller: ArrowDown,
+  }[direction]
+
+  return <Icon aria-hidden="true" className="size-3 opacity-70" />
 }

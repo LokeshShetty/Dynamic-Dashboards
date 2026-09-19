@@ -14,9 +14,15 @@ import {
 
 import type { SeriesPoint } from '@/data/_types'
 
+import {
+  CHART_AXIS_STYLE,
+  CHART_LEGEND_STYLE,
+  CHART_MARGIN,
+  CHART_SERIES_COLORS,
+  CHART_TOOLTIP_STYLE,
+} from '../../_constants'
 import type { ValueFormatter } from '../../_lib/format'
-
-export type ChartSeries = { key: string; label: string }
+import type { ChartSeries } from '../../_types'
 
 type Props = {
   chartType: 'line' | 'bar' | 'area'
@@ -29,31 +35,8 @@ type Props = {
   formatTick: ValueFormatter
 }
 
-/** Series colours come from the theme tokens, so they stay legible in both themes. */
-const SERIES_COLORS = [
-  'var(--chart-1)',
-  'var(--chart-2)',
-  'var(--chart-3)',
-  'var(--chart-4)',
-  'var(--chart-5)',
-]
-
-const AXIS_STYLE = { fill: 'var(--fg-muted)', fontSize: 11, fontVariantNumeric: 'tabular-nums' }
-
-const TOOLTIP_STYLE = {
-  background: 'var(--surface-raised)',
-  border: '1px solid var(--border)',
-  borderRadius: 8,
-  color: 'var(--fg)',
-  fontSize: 12,
-}
-
-const LEGEND_STYLE = { fontSize: 11, color: 'var(--fg-muted)' }
-
-const CHART_MARGIN = { top: 8, right: 8, bottom: 0, left: 0 }
-
 function colorAt(index: number) {
-  return SERIES_COLORS[index % SERIES_COLORS.length]
+  return CHART_SERIES_COLORS[index % CHART_SERIES_COLORS.length]
 }
 
 export function ChartCanvas({ chartType, points, series, stacked, format, formatTick }: Props) {
@@ -65,9 +48,9 @@ export function ChartCanvas({ chartType, points, series, stacked, format, format
   const shared = (
     <>
       <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" vertical={false} />
-      <XAxis dataKey="x" tick={AXIS_STYLE} stroke="var(--border-strong)" minTickGap={16} />
+      <XAxis dataKey="x" tick={CHART_AXIS_STYLE} stroke="var(--border-strong)" minTickGap={16} />
       <YAxis
-        tick={AXIS_STYLE}
+        tick={CHART_AXIS_STYLE}
         stroke="var(--border-strong)"
         width={64}
         tickCount={5}
@@ -75,10 +58,10 @@ export function ChartCanvas({ chartType, points, series, stacked, format, format
       />
       <Tooltip
         formatter={(value) => format(typeof value === 'number' ? value : null)}
-        contentStyle={TOOLTIP_STYLE}
+        contentStyle={CHART_TOOLTIP_STYLE}
         cursor={{ fill: 'var(--surface-muted)', fillOpacity: 0.5 }}
       />
-      {showsLegend ? <Legend wrapperStyle={LEGEND_STYLE} /> : null}
+      {showsLegend ? <Legend wrapperStyle={CHART_LEGEND_STYLE} /> : null}
     </>
   )
 

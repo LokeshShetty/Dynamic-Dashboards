@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 import { cn } from '@/lib/utils'
 
+import { GRID_DIRECTIONS } from '../../_constants'
 import { WidgetToolbar } from './widget-toolbar'
 
 type Props = {
@@ -18,13 +19,6 @@ type Props = {
     onResize: (dw: number, dh: number) => void
   }
   children: ReactNode
-}
-
-const DIRECTIONS: Record<string, { x: number; y: number } | undefined> = {
-  ArrowLeft: { x: -1, y: 0 },
-  ArrowRight: { x: 1, y: 0 },
-  ArrowUp: { x: 0, y: -1 },
-  ArrowDown: { x: 0, y: 1 },
 }
 
 /**
@@ -60,7 +54,7 @@ export function EditableWidget({
     if (!container) return
 
     const onKeyDown = (event: KeyboardEvent) => {
-      const step = DIRECTIONS[event.key]
+      const step = GRID_DIRECTIONS[event.key as keyof typeof GRID_DIRECTIONS] ?? null
       if (!step || isTypingTarget(event.target)) return
 
       event.preventDefault()

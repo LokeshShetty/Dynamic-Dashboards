@@ -2,25 +2,13 @@ import { useCallback, useRef, useState } from 'react'
 
 import { Check, ChevronDown, X } from 'lucide-react'
 
+import { CONTROL_CLASS, SEARCH_DEBOUNCE_MS } from '@/constants/ui'
 import { useDebouncedValue } from '@/hooks/use-debounced-value'
 import { useDismissOnOutside } from '@/hooks/use-dismiss-on-outside'
 import { cn } from '@/lib/utils'
+import type { SelectOption, SelectSelection } from '@/types/ui'
 
 import { Button } from './button'
-
-const SEARCH_DEBOUNCE_MS = 200
-
-export type SelectOption = {
-  value: string
-  label: string
-  /** Shown after the label, for a field's type or a value that is no longer in the data. */
-  hint?: string
-  isMissing?: boolean
-}
-
-export type SelectSelection =
-  | { mode: 'single'; value: string | null; onChange: (value: string | null) => void }
-  | { mode: 'multiple'; values: string[]; onChange: (values: string[]) => void }
 
 type Props = {
   id: string
@@ -104,7 +92,7 @@ export function SearchableSelect({ id, label, options, selection, emptyLabel, cl
         type="button"
         aria-expanded={isOpen}
         aria-haspopup="true"
-        className="border-border bg-surface-raised text-fg flex h-8 w-full items-center justify-between gap-2 rounded-md border px-2 text-left text-xs"
+        className={cn(CONTROL_CLASS, 'flex items-center justify-between gap-2 text-left')}
         onClick={() => (isOpen ? close() : setIsOpen(true))}
       >
         <span className={cn('truncate', selected.size === 0 ? 'text-fg-muted' : 'text-fg')}>

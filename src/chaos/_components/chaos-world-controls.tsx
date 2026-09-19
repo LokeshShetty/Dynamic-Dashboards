@@ -3,12 +3,10 @@ import { useId, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { SearchableSelect } from '@/components/ui/searchable-select'
 import { FIELD_TYPES, type FieldType } from '@/constants/data'
+import { CONTROL_CLASS } from '@/constants/ui'
 import { DATASET_IDS } from '@/data/_constants'
 import { worldFieldNames } from '@/data/_lib/world'
 import { useAppStore } from '@/lib/store'
-
-const SELECT_CLASS =
-  'border-border bg-surface-raised text-fg h-7 rounded-md border px-1 text-xs min-w-0 flex-1'
 
 /**
  * Changes to the world rather than to the transport: after any of these, a configuration that
@@ -34,7 +32,7 @@ export function ChaosWorldControls() {
         </label>
         <select
           id="chaos-dataset"
-          className={SELECT_CLASS}
+          className={CONTROL_CLASS}
           value={dataset}
           onChange={(event) => {
             setDataset(event.target.value)
@@ -79,7 +77,7 @@ export function ChaosWorldControls() {
         </label>
         <select
           id="chaos-type"
-          className={SELECT_CLASS}
+          className={CONTROL_CLASS}
           value={type}
           onChange={(event) => {
             const next = FIELD_TYPES.find((candidate) => candidate === event.target.value)

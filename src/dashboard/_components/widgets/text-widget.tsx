@@ -1,7 +1,8 @@
 /* oxlint-disable react/no-array-index-key -- these lists are rebuilt from immutable
    render input on every pass and are never reordered, so the index is the stable identity. */
+import { cva } from 'class-variance-authority'
+
 import { BidiText } from '@/components/ui/bidi-text'
-import { cn } from '@/lib/utils'
 
 import type { TextWidget } from '../../_lib/config.schema'
 import { parseMarkdown, type InlineToken } from '../../_lib/markdown'
@@ -10,11 +11,16 @@ import { WidgetFrame } from '../widget-frame'
 
 type Props = { widget: TextWidget }
 
-const TONE_CLASS = {
-  default: 'text-fg-muted',
-  note: 'text-fg-muted border-border border-l-2 pl-3',
-  warning: 'text-fg border-warning border-l-2 pl-3',
-} as const
+const bodyVariants = cva('flex flex-col gap-2 text-sm', {
+  variants: {
+    tone: {
+      default: 'text-fg-muted',
+      note: 'text-fg-muted border-border border-l-2 pl-3',
+      warning: 'text-fg border-warning border-l-2 pl-3',
+    },
+  },
+  defaultVariants: { tone: 'default' },
+})
 
 /**
  * Text is the one widget whose content comes straight from the configuration, so it is the
@@ -35,7 +41,7 @@ export function TextWidgetTile({ widget }: Props) {
       onRefresh={() => undefined}
     >
       {() => (
-        <div className={cn('flex flex-col gap-2 text-sm', TONE_CLASS[widget.tone ?? 'default'])}>
+        <div className={bodyVariants({ tone: widget.tone ?? 'default' })}>
           {blocks.map((block, index) =>
             block.kind === 'paragraph' ? (
               <p key={index}>

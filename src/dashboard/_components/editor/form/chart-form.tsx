@@ -5,6 +5,7 @@ import { Plus, Trash2 } from 'lucide-react'
 import { useFieldArray } from 'react-hook-form'
 
 import { Button } from '@/components/ui/button'
+import { FORM_CONTROL_CLASS } from '@/constants/ui'
 
 import { CHART_TYPES, CONFIG_LIMITS, TIME_BUCKETS } from '../../../_constants'
 import { useDatasetSchema } from '../../../_hooks/use-dataset-schema'
@@ -14,7 +15,7 @@ import { fieldTypeOf, readChartDefaults } from '../../../_lib/widget-form'
 import { AggregateSelect } from './aggregate-select'
 import { DatasetSelect } from './dataset-select'
 import { FieldSelect } from './field-select'
-import { FORM_CONTROL_CLASS, FormRow } from './form-row'
+import { FormRow } from './form-row'
 
 type Props = {
   entry: unknown

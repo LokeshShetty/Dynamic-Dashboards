@@ -2,11 +2,13 @@ import { useId } from 'react'
 
 import { zodResolver } from '@hookform/resolvers/zod'
 
+import { FORM_CONTROL_CLASS } from '@/constants/ui'
+
 import { TEXT_TONES } from '../../../_constants'
 import { useLiveWidgetForm } from '../../../_hooks/use-live-widget-form'
 import { textWidgetSchema, type TextWidget } from '../../../_lib/config.schema'
 import { readTextDefaults } from '../../../_lib/widget-form'
-import { FORM_CONTROL_CLASS, FormRow } from './form-row'
+import { FormRow } from './form-row'
 
 type Props = {
   entry: unknown

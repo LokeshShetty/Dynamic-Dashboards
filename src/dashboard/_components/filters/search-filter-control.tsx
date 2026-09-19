@@ -1,12 +1,11 @@
 import { useEffect, useId, useState } from 'react'
 
+import { CONTROL_CLASS, FILTER_DEBOUNCE_MS } from '@/constants/ui'
 import { useDebouncedValue } from '@/hooks/use-debounced-value'
 
 import type { DashboardFilter } from '../../_lib/config.schema'
 import type { FilterValue } from '../../_lib/to-data-query'
-import { FILTER_CONTROL_CLASS, FilterField } from './filter-field'
-
-const DEBOUNCE_MS = 250
+import { FilterField } from './filter-field'
 
 type Props = {
   filter: Extract<DashboardFilter, { kind: 'search' }>
@@ -25,7 +24,7 @@ export function SearchFilterControl({ filter, value, onChange }: Props) {
 
   const [typed, setTyped] = useState(applied)
   const [lastApplied, setLastApplied] = useState(applied)
-  const settled = useDebouncedValue(typed, DEBOUNCE_MS)
+  const settled = useDebouncedValue(typed, FILTER_DEBOUNCE_MS)
 
   // The URL can change without the reader typing: a reset, a shared link, the back button.
   if (applied !== lastApplied) {
@@ -43,7 +42,7 @@ export function SearchFilterControl({ filter, value, onChange }: Props) {
       <input
         id={controlId}
         type="search"
-        className={FILTER_CONTROL_CLASS}
+        className={CONTROL_CLASS}
         placeholder={filter.placeholder ?? `Search ${filter.label.toLowerCase()}`}
         value={typed}
         onChange={(event) => setTyped(event.target.value)}

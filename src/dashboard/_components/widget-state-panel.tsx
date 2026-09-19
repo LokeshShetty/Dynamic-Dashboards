@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 
+import { cva } from 'class-variance-authority'
 import type { LucideIcon } from 'lucide-react'
 
 import { BidiText } from '@/components/ui/bidi-text'
@@ -20,17 +21,30 @@ type Props = {
   className?: string
 }
 
-const PANEL_CLASS = {
-  neutral: 'border-border bg-surface-muted/60',
-  warning: 'border-warning/60 bg-warning-surface/60',
-  danger: 'border-danger/60 bg-danger-surface/60',
-} as const
+const panelVariants = cva(
+  'flex min-h-0 flex-1 flex-col items-center justify-center gap-2 overflow-auto rounded-md border border-dashed p-3 text-center',
+  {
+    variants: {
+      tone: {
+        neutral: 'border-border bg-surface-muted/60',
+        warning: 'border-warning/60 bg-warning-surface/60',
+        danger: 'border-danger/60 bg-danger-surface/60',
+      },
+    },
+    defaultVariants: { tone: 'neutral' },
+  },
+)
 
-const ICON_CLASS = {
-  neutral: 'text-fg-subtle bg-surface-muted',
-  warning: 'text-warning bg-warning-surface',
-  danger: 'text-danger bg-danger-surface',
-} as const
+const iconVariants = cva('rounded-full p-2', {
+  variants: {
+    tone: {
+      neutral: 'text-fg-subtle bg-surface-muted',
+      warning: 'text-warning bg-warning-surface',
+      danger: 'text-danger bg-danger-surface',
+    },
+  },
+  defaultVariants: { tone: 'neutral' },
+})
 
 /**
  * A widget that cannot show the truth is not a gap in the page. It is the tile doing its job,
@@ -50,13 +64,9 @@ export function WidgetStatePanel({
   return (
     <div
       role={tone === 'neutral' ? undefined : 'alert'}
-      className={cn(
-        'flex min-h-0 flex-1 flex-col items-center justify-center gap-2 overflow-auto rounded-md border border-dashed p-3 text-center',
-        PANEL_CLASS[tone],
-        className,
-      )}
+      className={cn(panelVariants({ tone }), className)}
     >
-      <span className={cn('rounded-full p-2', ICON_CLASS[tone])}>
+      <span className={iconVariants({ tone })}>
         <Icon aria-hidden="true" className="size-6" />
       </span>
 

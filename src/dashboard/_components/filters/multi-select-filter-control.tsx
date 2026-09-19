@@ -1,11 +1,13 @@
 import { useId, useMemo } from 'react'
 
-import { SearchableSelect, type SelectOption } from '@/components/ui/searchable-select'
+import { SearchableSelect } from '@/components/ui/searchable-select'
+import { CONTROL_CLASS } from '@/constants/ui'
+import type { SelectOption } from '@/types/ui'
 
 import { useDistinctValues } from '../../_hooks/use-distinct-values'
 import type { DashboardFilter } from '../../_lib/config.schema'
 import type { FilterValue } from '../../_lib/to-data-query'
-import { FILTER_CONTROL_CLASS, FilterField, FilterNote, FilterSkeleton } from './filter-field'
+import { FilterField, FilterNote, FilterSkeleton } from './filter-field'
 
 type Props = {
   filter: Extract<DashboardFilter, { kind: 'multi-select' }>
@@ -49,7 +51,7 @@ export function MultiSelectFilterControl({ filter, dataset, value, onChange }: P
       >
         <input
           id={controlId}
-          className={FILTER_CONTROL_CLASS}
+          className={CONTROL_CLASS}
           defaultValue={(value ?? []).join(',')}
           placeholder={`Any ${filter.label.toLowerCase()}`}
           onBlur={(event) => {

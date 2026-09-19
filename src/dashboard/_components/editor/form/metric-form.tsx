@@ -2,6 +2,8 @@ import { useId } from 'react'
 
 import { zodResolver } from '@hookform/resolvers/zod'
 
+import { FORM_CONTROL_CLASS } from '@/constants/ui'
+
 import { useDatasetSchema } from '../../../_hooks/use-dataset-schema'
 import { useLiveWidgetForm } from '../../../_hooks/use-live-widget-form'
 import { metricWidgetSchema, type MetricWidget } from '../../../_lib/config.schema'
@@ -9,7 +11,7 @@ import { fieldTypeOf, readMetricDefaults } from '../../../_lib/widget-form'
 import { AggregateSelect } from './aggregate-select'
 import { DatasetSelect } from './dataset-select'
 import { FieldSelect } from './field-select'
-import { FORM_CONTROL_CLASS, FormRow } from './form-row'
+import { FormRow } from './form-row'
 import { NumberFormatFields } from './number-format-fields'
 
 type Props = {

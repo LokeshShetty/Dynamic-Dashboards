@@ -8,18 +8,7 @@ import 'react-grid-layout/css/styles.css'
 import 'react-resizable/css/styles.css'
 
 import { GRID_FALLBACK_WIDTH, GRID_MARGIN, GRID_ROW_HEIGHT } from '../../_constants'
-
-export type GridPlacement = {
-  key: string
-  x: number
-  y: number
-  w: number
-  h: number
-  minW: number
-  minH: number
-  maxW: number
-  maxH: number
-}
+import type { GridPlacement } from '../../_types'
 
 type Props = {
   columns: number

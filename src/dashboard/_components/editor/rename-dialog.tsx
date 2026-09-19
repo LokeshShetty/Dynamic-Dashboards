@@ -2,9 +2,10 @@ import { useId, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
+import { FORM_CONTROL_CLASS } from '@/constants/ui'
 
 import { CONFIG_LIMITS } from '../../_constants'
-import { FORM_CONTROL_CLASS, FormRow } from './form/form-row'
+import { FormRow } from './form/form-row'
 
 type Props = {
   currentTitle: string

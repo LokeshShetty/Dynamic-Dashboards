@@ -1,8 +1,10 @@
 import { useId, useState } from 'react'
 
+import { CONTROL_CLASS } from '@/constants/ui'
+
 import type { DashboardFilter } from '../../_lib/config.schema'
 import type { FilterValue } from '../../_lib/to-data-query'
-import { FILTER_CONTROL_CLASS, FilterField } from './filter-field'
+import { FilterField } from './filter-field'
 
 type Props = {
   filter: Extract<DashboardFilter, { kind: 'date-range' }>
@@ -46,7 +48,7 @@ export function DateRangeFilterControl({ filter, value, onChange }: Props) {
           id={fromId}
           type="date"
           aria-label={`${filter.label} from`}
-          className={FILTER_CONTROL_CLASS}
+          className={CONTROL_CLASS}
           value={typed.from}
           onChange={(event) => setTyped({ ...typed, from: event.target.value })}
           onBlur={() => commit(typed)}
@@ -59,7 +61,7 @@ export function DateRangeFilterControl({ filter, value, onChange }: Props) {
           id={toId}
           type="date"
           aria-label={`${filter.label} to`}
-          className={FILTER_CONTROL_CLASS}
+          className={CONTROL_CLASS}
           value={typed.to}
           onChange={(event) => setTyped({ ...typed, to: event.target.value })}
           onBlur={() => commit(typed)}

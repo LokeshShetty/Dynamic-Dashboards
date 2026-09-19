@@ -75,3 +75,60 @@ export const AGGREGATE_LABELS = {
 export type WidgetKind = (typeof WIDGET_KINDS)[number]
 export type Aggregate = (typeof AGGREGATES)[number]
 export type FilterKind = (typeof FILTER_KINDS)[number]
+
+/** Which way an arrow key or a toolbar arrow moves a tile. */
+export const GRID_DIRECTIONS = {
+  ArrowLeft: { x: -1, y: 0 },
+  ArrowRight: { x: 1, y: 0 },
+  ArrowUp: { x: 0, y: -1 },
+  ArrowDown: { x: 0, y: 1 },
+} as const
+
+/** The toolbar's move and resize buttons, as data, because they are eight of the same thing. */
+export const TILE_MOVES = [
+  { label: 'left', x: -1, y: 0 },
+  { label: 'right', x: 1, y: 0 },
+  { label: 'up', x: 0, y: -1 },
+  { label: 'down', x: 0, y: 1 },
+] as const
+
+export const TILE_RESIZES = [
+  { label: 'narrower', w: -1, h: 0 },
+  { label: 'wider', w: 1, h: 0 },
+  { label: 'shorter', w: 0, h: -1 },
+  { label: 'taller', w: 0, h: 1 },
+] as const
+
+/** Chart series colours, from the theme tokens, so they stay legible in both themes. */
+export const CHART_SERIES_COLORS = [
+  'var(--chart-1)',
+  'var(--chart-2)',
+  'var(--chart-3)',
+  'var(--chart-4)',
+  'var(--chart-5)',
+] as const
+
+/** What the chart library is handed for axes, tooltips, legends and margins. */
+export const CHART_AXIS_STYLE = {
+  fill: 'var(--fg-muted)',
+  fontSize: 11,
+  fontVariantNumeric: 'tabular-nums',
+} as const
+
+export const CHART_TOOLTIP_STYLE = {
+  background: 'var(--surface-raised)',
+  border: '1px solid var(--border)',
+  borderRadius: 8,
+  color: 'var(--fg)',
+  fontSize: 12,
+} as const
+
+export const CHART_LEGEND_STYLE = { fontSize: 11, color: 'var(--fg-muted)' } as const
+export const CHART_MARGIN = { top: 8, right: 8, bottom: 0, left: 0 } as const
+
+/** What each side of a save conflict is called on screen. */
+export const CONFLICT_CHANGE_LABELS = {
+  'only-theirs': 'only in the saved version',
+  'only-mine': 'only in your draft',
+  different: 'different in both',
+} as const
