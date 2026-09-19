@@ -18,6 +18,8 @@ type Props = {
  * Export writes out exactly what is stored. Import treats the file as hostile input: it goes
  * through the same loader as anything else and lands as a draft to review, never straight into
  * storage, so a file from somewhere else cannot overwrite a dashboard without being looked at.
+ * The draft takes this dashboard's id, because what was imported is its contents and not its
+ * identity.
  *
  * The sample exists so import can be tried without first having to write a configuration by
  * hand, or having to guess the format from the documentation.
@@ -54,7 +56,9 @@ export function DashboardTransfer({ dashboardId, config, onImported }: Props) {
       return
     }
 
-    replaceDraft(dashboardId, load.shell)
+    // The file brings its own id. This dashboard is the one being edited, and storage is keyed
+    // by that, so the imported configuration is adopted rather than allowed to rename the record.
+    replaceDraft(dashboardId, { ...load.shell, id: dashboardId })
     pushToast({
       tone: 'info',
       title: 'Imported as an unsaved draft',

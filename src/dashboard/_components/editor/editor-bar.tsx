@@ -1,13 +1,17 @@
-import { Check, PencilLine, Save, Undo2 } from 'lucide-react'
+import { Check, CircleAlert, PencilLine, Save, Undo2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
 
 import type { WidgetKind } from '../../_constants'
+import type { SaveBlocker } from '../../_types'
 import { AddWidgetMenu } from './add-widget-menu'
 
 type Props = {
   isDirty: boolean
   savedVersion: number | null
+  /** Set when saving is not possible, so the disabled button is never the only explanation. */
+  saveBlocker: SaveBlocker | null
   isSaving: boolean
   onSave: () => void
   onAdd: (kind: WidgetKind) => void
@@ -23,6 +27,7 @@ type Props = {
 export function EditorBar({
   isDirty,
   savedVersion,
+  saveBlocker,
   isSaving,
   onSave,
   onAdd,
@@ -42,20 +47,28 @@ export function EditorBar({
       <AddWidgetMenu onAdd={onAdd} />
 
       <div className="ml-auto flex flex-wrap items-center gap-2">
-        <span className={isDirty ? 'text-warning text-xs' : 'text-fg-subtle text-xs'}>
-          {isDirty ? 'Unsaved changes' : `Saved as version ${savedVersion ?? '?'}`}
-        </span>
+        {saveBlocker === null ? (
+          <span className={isDirty ? 'text-warning text-xs' : 'text-fg-subtle text-xs'}>
+            {isDirty ? 'Unsaved changes' : `Saved as version ${savedVersion ?? '?'}`}
+          </span>
+        ) : (
+          <span
+            {...(saveBlocker.kind === 'blocked' ? { role: 'alert' } : {})}
+            className={cn(
+              'inline-flex max-w-sm items-center gap-1 text-xs',
+              saveBlocker.kind === 'blocked' ? 'text-danger' : 'text-fg-subtle',
+            )}
+          >
+            <CircleAlert aria-hidden="true" className="size-3 shrink-0" />
+            {saveBlocker.message}
+          </span>
+        )}
 
         <Button
           size="sm"
           variant="solid"
           onClick={onSave}
           disabled={isSaving || !isDirty || savedVersion === null}
-          title={
-            savedVersion === null
-              ? 'Waiting for the stored version this edit started from'
-              : undefined
-          }
         >
           <Save aria-hidden="true" className="size-3" />
           {isSaving ? 'Saving…' : isDirty ? 'Save' : 'Saved'}

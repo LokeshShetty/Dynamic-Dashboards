@@ -113,3 +113,11 @@ export type GridPlacement = {
 
 /** One line or set of bars on a chart, named for the legend. */
 export type ChartSeries = { key: string; label: string }
+
+/**
+ * Why the editor cannot save right now. Saving is compare and swap against the stored version,
+ * so without that version there is nothing to compare, and the reason belongs on the screen
+ * rather than in a disabled button.
+ */
+export type SaveBlocker =
+  { kind: 'waiting'; message: string } | { kind: 'blocked'; message: string }

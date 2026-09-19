@@ -6,14 +6,17 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { isRecord } from '@/lib/guards'
 import { useAppStore } from '@/lib/store'
 import { SaveConflictDialog } from '@/storage/_components/save-conflict-dialog'
-import { useDashboardRecord } from '@/storage/_hooks/use-dashboard-record'
+import {
+  useDashboardRecord,
+  type DashboardRecordState,
+} from '@/storage/_hooks/use-dashboard-record'
 import { useSaveDashboard } from '@/storage/_hooks/use-save-dashboard'
 import type { DashboardRecord } from '@/storage/_types'
 
 import { useEditor } from '../../_hooks/use-editor'
 import { indexFromGridKey } from '../../_lib/grid-placement'
 import { loadDashboardConfig } from '../../_lib/load-config'
-import type { WidgetFilterContext, WidgetSlot } from '../../_types'
+import type { SaveBlocker, WidgetFilterContext, WidgetSlot } from '../../_types'
 import { DashboardErrorScreen } from '../dashboard-error-screen'
 import { DashboardGrid } from '../dashboard-grid'
 import { EditableWidget } from './editable-widget'
@@ -51,6 +54,7 @@ export function EditorGrid({ dashboardId, filters, onLeave, onReloadSaved }: Pro
   const { state: recordState } = useDashboardRecord(dashboardId)
   const save = useSaveDashboard(dashboardId)
   const savedVersion = recordState.kind === 'ok' ? recordState.record.version : null
+  const saveBlocker = describeSaveBlocker(recordState, dashboardId)
 
   const shell = editor.shell
   const preview = useMemo(
@@ -108,6 +112,7 @@ export function EditorGrid({ dashboardId, filters, onLeave, onReloadSaved }: Pro
       <EditorBar
         isDirty={editor.isDirty}
         savedVersion={savedVersion}
+        saveBlocker={saveBlocker}
         isSaving={save.isPending}
         onSave={() => (savedVersion === null ? undefined : saveDraft(savedVersion))}
         onAdd={(kind) => {
@@ -231,4 +236,31 @@ export function EditorGrid({ dashboardId, filters, onLeave, onReloadSaved }: Pro
       />
     </div>
   )
+}
+
+/**
+ * A save needs the stored version to compare against. When that cannot be read, the editor says
+ * so where the button is, because a greyed out Save with no reason looks like a bug in the
+ * editor rather than a dashboard that could not be reached.
+ */
+function describeSaveBlocker(state: DashboardRecordState, id: string): SaveBlocker | null {
+  switch (state.kind) {
+    case 'ok':
+      return null
+    case 'loading':
+      return { kind: 'waiting', message: 'Reading the version this edit started from' }
+    case 'not-found':
+      return {
+        kind: 'blocked',
+        message: `Nothing is saved under “${id}”, so there is nothing to save against`,
+      }
+    case 'corrupt':
+      return { kind: 'blocked', message: `The saved record cannot be read: ${state.reason}` }
+    case 'error':
+      return { kind: 'blocked', message: `The saved version could not be read: ${state.reason}` }
+    default: {
+      const never: never = state
+      return never
+    }
+  }
 }

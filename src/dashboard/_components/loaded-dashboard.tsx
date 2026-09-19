@@ -21,6 +21,8 @@ import { EditorGrid } from './editor/editor-grid'
 import { FilterBar } from './filters/filter-bar'
 
 type Props = {
+  /** The id this dashboard is stored under. Everything that reads or writes storage uses it. */
+  dashboardId: string
   shell: DashboardShell
   filters: DashboardFilter[]
   droppedFilters: DroppedFilter[]
@@ -33,6 +35,7 @@ type Props = {
 }
 
 export function LoadedDashboard({
+  dashboardId,
   shell,
   filters,
   droppedFilters,
@@ -48,20 +51,20 @@ export function LoadedDashboard({
   const discardDraft = useAppStore((state) => state.discardDraft)
   const draft = useAppStore((state) => state.draft)
   const draftBaseline = useAppStore((state) => state.draftBaseline)
-  const { notice, dismiss } = useSaveNotices(shell.id)
+  const { notice, dismiss } = useSaveNotices(dashboardId)
   const isDirty = isDraftDirty(draft, draftBaseline)
 
   const reloadSaved = () => {
     dismiss()
-    void queryClient.invalidateQueries({ queryKey: dashboardQueryKey(shell.id) })
+    void queryClient.invalidateQueries({ queryKey: dashboardQueryKey(dashboardId) })
   }
 
   // The draft is taken from the loaded configuration when editing starts, and thrown away when
   // it ends. Nothing in edit mode touches what the reader sees until a save exists.
   useEffect(() => {
-    if (isEditing) startDraft(shell.id, shell)
+    if (isEditing) startDraft(dashboardId, shell)
     else discardDraft()
-  }, [discardDraft, isEditing, shell, startDraft])
+  }, [dashboardId, discardDraft, isEditing, shell, startDraft])
 
   const filterContext = useMemo(
     () => ({
@@ -110,7 +113,7 @@ export function LoadedDashboard({
         <div className="flex flex-wrap items-center gap-2">
           {readOnly ? null : (
             <DashboardTransfer
-              dashboardId={shell.id}
+              dashboardId={dashboardId}
               config={saved.config}
               onImported={enterEditMode}
             />
@@ -152,7 +155,7 @@ export function LoadedDashboard({
 
       {isEditing && !readOnly ? (
         <EditorGrid
-          dashboardId={shell.id}
+          dashboardId={dashboardId}
           filters={filterContext}
           onLeave={leaveEditMode}
           onReloadSaved={reloadSaved}

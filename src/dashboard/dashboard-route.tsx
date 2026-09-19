@@ -85,7 +85,7 @@ export function DashboardRoute() {
   return (
     <Shell>
       {revision === null ? (
-        <CurrentDashboard record={state.record} />
+        <CurrentDashboard dashboardId={id} record={state.record} />
       ) : (
         <RevisionDashboard
           dashboardId={id}
@@ -108,14 +108,17 @@ function Shell({ children }: { children: ReactNode }) {
 }
 
 function CurrentDashboard({
+  dashboardId,
   record,
 }: {
+  dashboardId: string
   record: { id: string; version: number; savedAt: string; config: string; revisionCount: number }
 }) {
   const load = useMemo(() => loadDashboardConfig(record.config), [record.config])
 
   return (
     <DashboardView
+      dashboardId={dashboardId}
       load={load}
       saved={{
         version: record.version,
@@ -191,6 +194,7 @@ function RevisionDashboard({
 
       <div>
         <DashboardView
+          dashboardId={dashboardId}
           load={load}
           readOnly
           saved={{
@@ -240,7 +244,9 @@ function HostileDashboard({ file, onClose }: { file: string; onClose: () => void
     <div className="flex flex-col gap-4 p-4 md:p-6">
       <HostileBanner file={file} attacks={attacks} onClose={onClose} />
 
+      {/* A hostile file is not stored, so it is addressed by its file name and never by an id. */}
       <DashboardView
+        dashboardId={`hostile:${file}`}
         load={load}
         readOnly
         saved={{

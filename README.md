@@ -106,6 +106,8 @@ completely fine.
 - **Edit dashboard** puts `?edit=1` on the URL. Drag a tile by the handle in its toolbar, resize
   from the corner, or use the arrow keys while focus is in the tile (shift and arrows resize).
   Every arrangement is checked against the loader's rules before it is applied.
+- **Import** loads a file as an unsaved draft on the dashboard you are looking at, and the draft
+  takes that dashboard's id: what is imported is the contents, not the identity.
 - **Save** is enabled only when the draft differs from what is stored, and reads _Saved_ when it
   does not.
 - **`?rev=N`** opens a past revision read only, with a banner saying which of how many. Restoring
