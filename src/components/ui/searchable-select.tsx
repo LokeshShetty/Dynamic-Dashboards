@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 
 import { Check, ChevronDown, X } from 'lucide-react'
 
@@ -48,9 +48,20 @@ export function SearchableSelect({ id, label, options, selection, emptyLabel, cl
   const containerRef = useRef<HTMLDivElement>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [search, setSearch] = useState('')
-  const term = useDebouncedValue(search, SEARCH_DEBOUNCE_MS).trim().toLowerCase()
+  const settled = useDebouncedValue(search, SEARCH_DEBOUNCE_MS)
 
-  useDismissOnOutside(containerRef, isOpen, () => setIsOpen(false))
+  // An empty box filters nothing, at once. Waiting out the debounce to clear a filter would show
+  // a list with values missing from it for a moment after it was already emptied.
+  const term = search === '' ? '' : settled.trim().toLowerCase()
+
+  // Closing clears the search: reopening a list already filtered by something typed a while ago
+  // looks like a list with values missing from it.
+  const close = useCallback(() => {
+    setIsOpen(false)
+    setSearch('')
+  }, [])
+
+  useDismissOnOutside(containerRef, isOpen, close)
 
   const selected =
     selection.mode === 'single'
@@ -71,7 +82,7 @@ export function SearchableSelect({ id, label, options, selection, emptyLabel, cl
   const choose = (option: SelectOption) => {
     if (selection.mode === 'single') {
       selection.onChange(option.value)
-      setIsOpen(false)
+      close()
       return
     }
 
@@ -94,7 +105,7 @@ export function SearchableSelect({ id, label, options, selection, emptyLabel, cl
         aria-expanded={isOpen}
         aria-haspopup="true"
         className="border-border bg-surface-raised text-fg flex h-8 w-full items-center justify-between gap-2 rounded-md border px-2 text-left text-xs"
-        onClick={() => setIsOpen((open) => !open)}
+        onClick={() => (isOpen ? close() : setIsOpen(true))}
       >
         <span className={cn('truncate', selected.size === 0 ? 'text-fg-muted' : 'text-fg')}>
           {summary()}
