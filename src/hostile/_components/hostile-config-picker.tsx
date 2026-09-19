@@ -3,7 +3,7 @@ import { useId } from 'react'
 import { Bug } from 'lucide-react'
 
 import { useHostileParam } from '../_hooks/use-hostile-param'
-import { HOSTILE_CONFIGS } from '../_lib/hostile-configs'
+import { HOSTILE_CONFIG_NAMES } from '../_lib/hostile-configs'
 
 const SELECT_CLASS =
   'border-border bg-surface-raised text-fg h-7 w-full rounded-md border px-1 text-xs'
@@ -29,9 +29,9 @@ export function HostileConfigPicker() {
         onChange={(event) => (event.target.value === '' ? close() : open(event.target.value))}
       >
         <option value="">The stored dashboard</option>
-        {HOSTILE_CONFIGS.map((config) => (
-          <option key={config.name} value={config.name}>
-            {config.name}
+        {HOSTILE_CONFIG_NAMES.map((name) => (
+          <option key={name} value={name}>
+            {name}
           </option>
         ))}
       </select>

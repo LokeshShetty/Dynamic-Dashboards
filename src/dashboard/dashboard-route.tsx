@@ -1,13 +1,13 @@
 import { useMemo, type ReactNode } from 'react'
 
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router'
 
 import { ChaosPanel } from '@/chaos/_components/chaos-panel'
 import { Button } from '@/components/ui/button'
 import { HostileBanner } from '@/hostile/_components/hostile-banner'
 import { useHostileParam } from '@/hostile/_hooks/use-hostile-param'
-import { findHostileConfig, HOSTILE_MANIFEST_TEXT } from '@/hostile/_lib/hostile-configs'
+import { HOSTILE_MANIFEST_TEXT, loadHostileConfig } from '@/hostile/_lib/hostile-configs'
 import { manifestSchema } from '@/hostile/_lib/manifest.schema'
 import { useAppStore } from '@/lib/store'
 import { DashboardNotFound } from '@/storage/_components/dashboard-not-found'
@@ -207,8 +207,11 @@ function RevisionDashboard({
 
 /** One of the files in hostile-configs/, rendered exactly as a saved configuration would be. */
 function HostileDashboard({ file, onClose }: { file: string; onClose: () => void }) {
-  const config = findHostileConfig(file)
-  const load = useMemo(() => (config === null ? null : loadDashboardConfig(config.text)), [config])
+  // The corpus is not in the application bundle, so opening one is a request like any other.
+  const config = useQuery({
+    queryKey: ['hostile-config', file],
+    queryFn: () => loadHostileConfig(file),
+  })
 
   const attacks = useMemo(() => {
     const manifest = manifestSchema.safeParse(JSON.parse(HOSTILE_MANIFEST_TEXT))
@@ -216,7 +219,14 @@ function HostileDashboard({ file, onClose }: { file: string; onClose: () => void
     return manifest.data.files.find((entry) => entry.file === file)?.attacks ?? null
   }, [file])
 
-  if (config === null || load === null) {
+  const load = useMemo(
+    () => (config.data ? loadDashboardConfig(config.data.text) : null),
+    [config.data],
+  )
+
+  if (config.isPending) return <DashboardSkeleton />
+
+  if (!config.data || !load) {
     return (
       <DashboardErrorScreen
         heading="No such hostile file"
@@ -236,7 +246,7 @@ function HostileDashboard({ file, onClose }: { file: string; onClose: () => void
         saved={{
           version: 0,
           savedAt: '',
-          config: config.text,
+          config: config.data.text,
           revisionCount: 0,
         }}
       />

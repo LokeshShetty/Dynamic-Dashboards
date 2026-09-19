@@ -1,10 +1,10 @@
 import { createParser, useQueryState } from 'nuqs'
 
-import { findHostileConfig } from '../_lib/hostile-configs'
+import { isHostileConfigName } from '../_lib/hostile-configs'
 
 /** Which hostile file is being looked at: /d/demo?hostile=duplicate-ids.json */
 const parseHostileFile = createParser({
-  parse: (raw) => (findHostileConfig(raw) === null ? null : raw),
+  parse: (raw) => (isHostileConfigName(raw) ? raw : null),
   serialize: (value: string) => value,
 })
 
