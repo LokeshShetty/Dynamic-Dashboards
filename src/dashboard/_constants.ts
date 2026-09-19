@@ -41,6 +41,33 @@ export const CHART_TYPES = ['line', 'bar', 'area'] as const
 export const TIME_BUCKETS = ['day', 'week', 'month'] as const
 export const FILTER_KINDS = ['select', 'multi-select', 'date-range', 'search'] as const
 export const NUMBER_STYLES = ['plain', 'compact', 'currency', 'percent'] as const
+
+/** What a currency format means when the configuration names no code. */
+export const DEFAULT_CURRENCY = 'USD'
+
+/**
+ * Enough codes to pick from when the browser will not enumerate its own. Intl has known the full
+ * list since ES2022; this is the short list for the browsers that do not answer.
+ */
+export const FALLBACK_CURRENCY_CODES = [
+  'USD',
+  'EUR',
+  'GBP',
+  'INR',
+  'JPY',
+  'CNY',
+  'AUD',
+  'CAD',
+  'CHF',
+  'SGD',
+  'AED',
+  'BRL',
+  'MXN',
+  'ZAR',
+  'SEK',
+  'NZD',
+  'HKD',
+] as const
 export const SORT_DIRECTIONS = ['asc', 'desc'] as const
 export const TEXT_TONES = ['default', 'note', 'warning'] as const
 export const COLUMN_ALIGNMENTS = ['left', 'right'] as const

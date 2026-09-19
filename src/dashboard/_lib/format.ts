@@ -3,6 +3,7 @@ import type { ResolvedField } from '@/data/_types'
 import { err, ok, type Result } from '@/lib/result'
 import type { DataValue } from '@/types/data'
 
+import { DEFAULT_CURRENCY } from '../_constants'
 import type { NumberFormat } from './config.schema'
 
 /**
@@ -40,7 +41,7 @@ export function resolveFormatter(
       )
     }
 
-    const currency = format.currency ?? 'USD'
+    const currency = format.currency ?? DEFAULT_CURRENCY
 
     // The schema can only check that a currency code is three characters. Intl decides whether
     // it is a currency, and says so by throwing, which must not escape a function whose whole
