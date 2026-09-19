@@ -225,9 +225,10 @@ function readRange(
 
   if (filledFrom > filledTo) {
     ignored.push({
-      param: fromParam,
+      param: `${fromParam} and ${toParam ?? fromParam}`,
       value: `${filledFrom} to ${filledTo}`,
-      reason: 'the range ends before it starts',
+      reason:
+        'the range ends before it starts, and swapping the ends would answer a different question',
     })
     return filter.defaultValue ?? null
   }

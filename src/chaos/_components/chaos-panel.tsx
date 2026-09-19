@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { useQueryClient } from '@tanstack/react-query'
 import { Check, DatabaseBackup, FlaskConical, RotateCcw, X } from 'lucide-react'
@@ -24,6 +24,30 @@ const milliseconds = (value: number) => `${value} ms`
  */
 export function ChaosPanel({ className }: { className?: string }) {
   const [isOpen, setIsOpen] = useState(false)
+  const panelRef = useRef<HTMLElement>(null)
+
+  // The panel sits over the dashboard it is breaking, so it closes the way an overlay should:
+  // a click anywhere else, or Escape.
+  useEffect(() => {
+    if (!isOpen) return
+
+    const onPointerDown = (event: PointerEvent) => {
+      const panel = panelRef.current
+      if (panel && event.target instanceof Node && !panel.contains(event.target)) setIsOpen(false)
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsOpen(false)
+    }
+
+    document.addEventListener('pointerdown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [isOpen])
 
   const latencyMs = useAppStore((state) => state.latencyMs)
   const jitterMs = useAppStore((state) => state.jitterMs)
@@ -101,6 +125,7 @@ export function ChaosPanel({ className }: { className?: string }) {
 
   return (
     <section
+      ref={panelRef}
       aria-label="Chaos controls"
       className={cn(
         'border-border bg-surface-raised fixed right-4 bottom-4 z-50 flex w-80 flex-col gap-3 rounded-lg border p-3 shadow-xl',
