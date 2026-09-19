@@ -22,7 +22,8 @@ export const CONFIG_LIMITS = {
   MAX_CHART_SERIES: 5,
   MAX_SELECT_OPTIONS: 50,
   MAX_GRID_COLUMNS: 12,
-  MAX_GRID_ROWS: 100,
+  /** Fifty widgets, the widget cap, at the tallest a widget may be. A migration has to fit. */
+  MAX_GRID_ROWS: 320,
   MAX_ROW_SPAN: 6,
   MAX_PAGE_SIZE: 100,
   MAX_DECIMALS: 4,

@@ -46,7 +46,12 @@ function placeWidgets(widgets: ReadonlyArray<unknown>): unknown[] {
   })
 }
 
-/** Falls back to the default size for the kind, which is presentation, never a binding. */
+/**
+ * Falls back to the default size for the kind, which is presentation, never a binding. Both
+ * spans are held inside the grid's limits: a v2 widget twenty rows tall was legal in a format
+ * that had no row limit, and carrying it forward unchanged would produce a v3 widget the v3
+ * schema rejects, turning a dashboard that opened yesterday into a page of invalid tiles.
+ */
 function readSpan(widget: Record<string, unknown>) {
   const kind = WIDGET_KINDS.find((candidate) => candidate === widget.kind)
   const fallback = DEFAULT_SIZE_BY_KIND[kind ?? 'text']
@@ -58,7 +63,9 @@ function readSpan(widget: Record<string, unknown>) {
   const h = typeof layout.rowSpan === 'number' ? layout.rowSpan : fallback.h
 
   if (!Number.isInteger(w) || !Number.isInteger(h) || w < 1 || h < 1) return fallback
-  if (w > CONFIG_LIMITS.MAX_GRID_COLUMNS) return fallback
 
-  return { w, h }
+  return {
+    w: Math.min(w, CONFIG_LIMITS.MAX_GRID_COLUMNS),
+    h: Math.min(h, CONFIG_LIMITS.MAX_ROW_SPAN),
+  }
 }
