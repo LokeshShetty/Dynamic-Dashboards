@@ -187,6 +187,23 @@ export const localDashboardStore: DashboardStore = {
 
       const next: StoredDashboard = { id, version, savedAt, config, revisions }
       write(keyFor(id), JSON.stringify(next))
+
+      /**
+       * localStorage has no compare and swap of its own: the read above and the write here are
+       * two operations, and two tabs can pass the version check at the same moment and both
+       * write. So the write is read back. If what is stored is not what was just written, the
+       * other tab won the race, and this save is reported as the conflict it is rather than as
+       * a success that quietly lost the reader's work.
+       *
+       * This narrows the window rather than closing it. Closing it needs a backend, and that is
+       * written up in SELF_REVIEW.md.
+       */
+      const landed = readStored(id)
+
+      if (landed.version !== version || landed.savedAt !== savedAt) {
+        return { kind: 'conflict', current: toRecord(landed) }
+      }
+
       publishSave({ dashboardId: id, version, savedAt })
 
       return { kind: 'saved', record: toRecord(next) }
