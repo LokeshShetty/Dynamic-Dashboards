@@ -111,7 +111,8 @@ browser, the eight series cap on grouped charts, and the fixed seed behind the d
 
 ## AI tools
 
-AI tools were used throughout: the work was done in a series of assistant sessions, one per
-phase, each ending with a green `npm run check` and a commit. See [transcripts/](transcripts/).
+AI tools were used throughout: the work was done in one continuous assistant session, in nine
+phases, each ending with a green `npm run check` and a commit, and a second assistant that had
+not seen it reviewed the result. See [transcripts/](transcripts/).
 The commit history is the honest record of the order things happened in, including the decisions
 that were later reversed, which `DESIGN.md` keeps rather than tidies away.
