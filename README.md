@@ -72,13 +72,16 @@ __chaos.get() // what is in force now
 2. **Rename a field**: `__chaos.renameField('claims', 'amount_cents', 'amount_cents_v2')`. The
    two money metrics and the weekly chart say the field is not in the dataset any more; the claim
    count keeps working; the table loses one column and keeps the other four.
-3. **Change a type**: `__chaos.changeFieldType('claims', 'status', 'number')`. The status filter
-   is no longer applicable, and every widget says it is showing unfiltered data.
+3. **Change a type under a filter that is in use.** The date range is the only filter applied by
+   default, so run `__chaos.changeFieldType('claims', 'submitted_at', 'text')`: every widget
+   carries an `Unfiltered` badge and says the filter needs a date field. The same happens with
+   `status` once you have chosen one in the Status filter.
 4. **Corrupt a response**: `__chaos.corruptNextResponse()` then refresh a tile. The payload fails
    its own schema and the tile says so rather than rendering it.
-5. **Go slow then fail**: `__chaos.set({ latencyMs: 8000 })` shows skeletons and then the 8 second
-   timeout; `__chaos.set({ failureRate: 1 })` and press a tile's refresh to see a failure that
-   keeps the old data as **stale since HH:MM:SS**.
+5. **Go slow, then fail**: `__chaos.set({ latencyMs: 12000 })` and refresh a tile to sit in the
+   skeleton until the 8 second timeout fires. Then `__chaos.set({ latencyMs: 0, failureRate: 1 })`
+   and press a tile's refresh: it keeps the numbers it already had and labels them **stale since
+   HH:MM:SS** with the reason the refresh failed.
 
 ### Hostile configurations
 
