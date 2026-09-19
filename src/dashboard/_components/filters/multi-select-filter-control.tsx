@@ -1,17 +1,11 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useId, useMemo } from 'react'
 
-import { Check, ChevronDown, X } from 'lucide-react'
-
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { SearchableSelect, type SelectOption } from '@/components/ui/searchable-select'
 
 import { useDistinctValues } from '../../_hooks/use-distinct-values'
 import type { DashboardFilter } from '../../_lib/config.schema'
 import type { FilterValue } from '../../_lib/to-data-query'
 import { FILTER_CONTROL_CLASS, FilterField, FilterNote, FilterSkeleton } from './filter-field'
-
-/** Above this many values the list gets its own search box. */
-const SEARCHABLE_FROM = 8
 
 type Props = {
   filter: Extract<DashboardFilter, { kind: 'multi-select' }>
@@ -21,47 +15,18 @@ type Props = {
 }
 
 /**
- * A dropdown of checkboxes rather than a row of chips. Chips are readable at four values and
- * unusable at forty: they wrap over the whole bar and there is nothing to search. This keeps one
- * control of a fixed size whatever the field holds, says how many are selected, and filters the
- * list once there are enough values to be worth filtering.
+ * Several values from a list that comes out of the data, so it is as long as the data says. A
+ * value that is selected but no longer present stays selected and is marked: dropping it would
+ * quietly widen the reader's query.
  */
 export function MultiSelectFilterControl({ filter, dataset, value, onChange }: Props) {
   const controlId = useId()
   const state = useDistinctValues(dataset, filter.field)
-  const [isOpen, setIsOpen] = useState(false)
-  const [search, setSearch] = useState('')
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  const selected = useMemo(() => new Set(value ?? []), [value])
 
   const labels = useMemo(
     () => new Map(filter.options.map((option) => [option.value, option.label])),
     [filter.options],
   )
-
-  useEffect(() => {
-    if (!isOpen) return
-
-    const onPointerDown = (event: PointerEvent) => {
-      const container = containerRef.current
-      if (container && event.target instanceof Node && !container.contains(event.target)) {
-        setIsOpen(false)
-      }
-    }
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setIsOpen(false)
-    }
-
-    document.addEventListener('pointerdown', onPointerDown)
-    document.addEventListener('keydown', onKeyDown)
-
-    return () => {
-      document.removeEventListener('pointerdown', onPointerDown)
-      document.removeEventListener('keydown', onKeyDown)
-    }
-  }, [isOpen])
 
   if (state.kind === 'loading') {
     return (
@@ -99,28 +64,14 @@ export function MultiSelectFilterControl({ filter, dataset, value, onChange }: P
     )
   }
 
-  const missing = (value ?? []).filter((entry) => !state.values.includes(entry))
-  const offered = [...missing, ...state.values]
-  const matching = offered.filter((option) =>
-    labelFor(option).toLowerCase().includes(search.trim().toLowerCase()),
-  )
+  const selected = value ?? []
+  const missing = selected.filter((entry) => !state.values.includes(entry))
 
-  function labelFor(option: string) {
-    return labels.get(option) ?? option
-  }
-
-  const toggle = (option: string) => {
-    const next = new Set(selected)
-    if (next.has(option)) next.delete(option)
-    else next.add(option)
-    onChange(next.size === 0 ? null : [...next])
-  }
-
-  const summary = () => {
-    if (selected.size === 0) return `All ${filter.label.toLowerCase()}`
-    if (selected.size === 1) return labelFor([...selected][0] ?? '')
-    return `${selected.size} selected`
-  }
+  const options: SelectOption[] = [...missing, ...state.values].map((option) => ({
+    value: option,
+    label: labels.get(option) ?? option,
+    isMissing: missing.includes(option),
+  }))
 
   const note = () => {
     if (missing.length > 0) {
@@ -138,77 +89,17 @@ export function MultiSelectFilterControl({ filter, dataset, value, onChange }: P
 
   return (
     <FilterField label={filter.label} controlId={controlId} note={note()}>
-      <div ref={containerRef} className="relative">
-        <button
-          id={controlId}
-          type="button"
-          aria-expanded={isOpen}
-          aria-haspopup="true"
-          className={cn(FILTER_CONTROL_CLASS, 'flex items-center justify-between gap-2 text-left')}
-          onClick={() => setIsOpen((open) => !open)}
-        >
-          <span className={selected.size === 0 ? 'text-fg-muted truncate' : 'text-fg truncate'}>
-            {summary()}
-          </span>
-          <ChevronDown aria-hidden="true" className="size-3 shrink-0" />
-        </button>
-
-        {isOpen ? (
-          <div className="border-border bg-surface-raised absolute z-30 mt-1 flex w-64 flex-col gap-2 rounded-md border p-2 shadow-xl">
-            {offered.length >= SEARCHABLE_FROM ? (
-              <input
-                type="search"
-                aria-label={`Search ${filter.label.toLowerCase()} values`}
-                placeholder="Search"
-                className={FILTER_CONTROL_CLASS}
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-              />
-            ) : null}
-
-            <ul className="flex max-h-56 flex-col overflow-auto">
-              {matching.map((option) => (
-                <li key={option}>
-                  <label className="hover:bg-surface-muted flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-xs">
-                    <input
-                      type="checkbox"
-                      className="accent-accent"
-                      checked={selected.has(option)}
-                      onChange={() => toggle(option)}
-                    />
-                    <span className="truncate">{labelFor(option)}</span>
-                    {missing.includes(option) ? (
-                      <span className="text-warning ml-auto shrink-0">not in data</span>
-                    ) : null}
-                    {selected.has(option) ? (
-                      <Check aria-hidden="true" className="text-accent ml-auto size-3 shrink-0" />
-                    ) : null}
-                  </label>
-                </li>
-              ))}
-
-              {matching.length === 0 ? (
-                <li className="text-fg-muted px-1 py-2 text-xs">Nothing matches “{search}”</li>
-              ) : null}
-            </ul>
-
-            <div className="border-border flex items-center justify-between border-t pt-2">
-              <span className="text-fg-subtle text-xs tabular-nums">
-                {selected.size} of {offered.length}
-              </span>
-              <Button
-                size="sm"
-                variant="ghost"
-                disabled={selected.size === 0}
-                onClick={() => onChange(null)}
-              >
-                <X aria-hidden="true" className="size-3" />
-                Clear
-              </Button>
-            </div>
-          </div>
-        ) : null}
-      </div>
+      <SearchableSelect
+        id={controlId}
+        label={filter.label}
+        options={options}
+        emptyLabel={`All ${filter.label.toLowerCase()}`}
+        selection={{
+          mode: 'multiple',
+          values: selected,
+          onChange: (values) => onChange(values.length > 0 ? values : null),
+        }}
+      />
     </FilterField>
   )
 }

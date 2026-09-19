@@ -1,5 +1,7 @@
 import { useId } from 'react'
 
+import { SearchableSelect, type SelectOption } from '@/components/ui/searchable-select'
+
 import type { DatasetSchemaState } from '../../../_hooks/use-dataset-schema'
 import { FORM_CONTROL_CLASS, FormRow } from './form-row'
 
@@ -13,10 +15,10 @@ type Props = {
 }
 
 /**
- * Picks a field out of the dataset as it is right now. A widget bound to a field that has since
- * been removed keeps its value, marked, so opening the editor on a broken widget shows what it
- * was asking for instead of quietly clearing it. If the schema cannot be fetched at all, the
- * name can still be typed.
+ * Picks a field out of the dataset as it is right now, searchable because a dataset can have as
+ * many fields as it likes. A widget bound to a field that has since been removed keeps its value,
+ * marked, so opening the editor on a broken widget shows what it was asking for instead of
+ * quietly clearing it. If the schema cannot be fetched at all, the name can still be typed.
  */
 export function FieldSelect({ label, value, schema, error, onChange, optional = false }: Props) {
   const controlId = useId()
@@ -50,6 +52,15 @@ export function FieldSelect({ label, value, schema, error, onChange, optional = 
   const names = schema.fields.map((field) => field.name)
   const isMissing = value !== '' && !names.includes(value)
 
+  const options: SelectOption[] = [
+    ...(isMissing ? [{ value, label: value, isMissing: true }] : []),
+    ...schema.fields.map((field) => ({
+      value: field.name,
+      label: field.name,
+      hint: field.unit === null ? field.type : `${field.type} · ${field.unit}`,
+    })),
+  ]
+
   return (
     <FormRow
       label={label}
@@ -57,20 +68,17 @@ export function FieldSelect({ label, value, schema, error, onChange, optional = 
       error={error}
       hint={isMissing ? `“${value}” is not in this dataset any more` : undefined}
     >
-      <select
+      <SearchableSelect
         id={controlId}
-        className={FORM_CONTROL_CLASS}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-      >
-        <option value="">{optional ? 'None' : 'Choose a field'}</option>
-        {isMissing ? <option value={value}>{value} (not in dataset)</option> : null}
-        {schema.fields.map((field) => (
-          <option key={field.name} value={field.name}>
-            {field.name} ({field.type})
-          </option>
-        ))}
-      </select>
+        label={label}
+        options={options}
+        emptyLabel={optional ? 'None' : 'Choose a field'}
+        selection={{
+          mode: 'single',
+          value: value === '' ? null : value,
+          onChange: (next) => onChange(next ?? ''),
+        }}
+      />
     </FormRow>
   )
 }

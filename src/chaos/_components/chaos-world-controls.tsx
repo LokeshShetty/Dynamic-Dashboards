@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 import { FIELD_TYPES, type FieldType } from '@/constants/data'
 import { DATASET_IDS } from '@/data/_constants'
 import { worldFieldNames } from '@/data/_lib/world'
@@ -14,6 +15,7 @@ const SELECT_CLASS =
  * was correct when it was saved may no longer resolve, which is the point.
  */
 export function ChaosWorldControls() {
+  const fieldId = useId()
   const renameField = useAppStore((state) => state.renameField)
   const changeFieldType = useAppStore((state) => state.changeFieldType)
   const dropDataset = useAppStore((state) => state.dropDataset)
@@ -46,21 +48,21 @@ export function ChaosWorldControls() {
           ))}
         </select>
 
-        <label className="sr-only" htmlFor="chaos-field">
+        <label className="sr-only" htmlFor={fieldId}>
           Field
         </label>
-        <select
-          id="chaos-field"
-          className={SELECT_CLASS}
-          value={field}
-          onChange={(event) => setField(event.target.value)}
-        >
-          {fields.map((name) => (
-            <option key={name} value={name}>
-              {name}
-            </option>
-          ))}
-        </select>
+        <SearchableSelect
+          id={fieldId}
+          label="field"
+          className="min-w-0 flex-1"
+          options={fields.map((name) => ({ value: name, label: name }))}
+          emptyLabel="Choose a field"
+          selection={{
+            mode: 'single',
+            value: field === '' ? null : field,
+            onChange: (next) => setField(next ?? ''),
+          }}
+        />
       </div>
 
       <div className="flex flex-wrap gap-1">

@@ -374,9 +374,13 @@ person typing.
 the same client as everything else, which means they are slow, they can fail, and a renamed field
 takes the options away. So the bar is treated as a data surface in its own right:
 
-- `multi-select` is a dropdown of checkboxes with its own search once there are enough values,
-  rather than a row of chips: chips are readable at four values and unusable at forty, where they
-  wrap across the whole bar and offer nothing to search;
+- every list that comes out of data goes through one searchable dropdown: filter values, and the
+  field pickers in the editor and the chaos panel. A native select cannot be searched and a row of
+  chips cannot be scanned, so the control is a trigger and a panel of native inputs, radios where
+  one value is being chosen and checkboxes where several are, which keeps the keyboard behaviour
+  the browser already provides. The search appears once a list is long enough to be worth
+  filtering and matches on a debounced term, so typing stays smooth over a few hundred values
+  while the field itself updates on every keystroke;
 - while the values load, the control shows a skeleton of its own shape;
 - if the load fails, the control says why and turns into a text input, so a reader who already
   knows the value they want is never blocked by a failing list;

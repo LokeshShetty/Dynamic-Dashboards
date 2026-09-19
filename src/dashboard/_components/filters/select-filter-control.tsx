@@ -1,5 +1,7 @@
 import { useId, useMemo } from 'react'
 
+import { SearchableSelect, type SelectOption } from '@/components/ui/searchable-select'
+
 import { useDistinctValues } from '../../_hooks/use-distinct-values'
 import type { DashboardFilter } from '../../_lib/config.schema'
 import type { FilterValue } from '../../_lib/to-data-query'
@@ -56,11 +58,18 @@ export function SelectFilterControl({ filter, dataset, value, onChange }: Props)
     )
   }
 
-  const missing = value !== null && !state.values.includes(value)
-  const options = missing ? [value, ...state.values] : state.values
+  const isMissing = value !== null && !state.values.includes(value)
+
+  const options: SelectOption[] = (
+    isMissing && value !== null ? [value, ...state.values] : state.values
+  ).map((option) => ({
+    value: option,
+    label: labels.get(option) ?? option,
+    isMissing: isMissing && option === value,
+  }))
 
   const note = () => {
-    if (missing) {
+    if (isMissing) {
       return <FilterNote tone="warning">“{value}” is not present in current data</FilterNote>
     }
     if (state.truncated) {
@@ -71,20 +80,13 @@ export function SelectFilterControl({ filter, dataset, value, onChange }: Props)
 
   return (
     <FilterField label={filter.label} controlId={controlId} note={note()}>
-      <select
+      <SearchableSelect
         id={controlId}
-        className={FILTER_CONTROL_CLASS}
-        value={value ?? ''}
-        onChange={(event) => onChange(event.target.value === '' ? null : event.target.value)}
-      >
-        <option value="">All</option>
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {labels.get(option) ?? option}
-            {option === value && missing ? ' (not in current data)' : ''}
-          </option>
-        ))}
-      </select>
+        label={filter.label}
+        options={options}
+        emptyLabel={`All ${filter.label.toLowerCase()}`}
+        selection={{ mode: 'single', value, onChange }}
+      />
     </FilterField>
   )
 }
