@@ -41,13 +41,22 @@ export function resolveFormatter(
     }
 
     const currency = format.currency ?? 'USD'
-    const formatter = new Intl.NumberFormat(undefined, {
-      style: 'currency',
-      currency,
-      notation: variant === 'compact' ? 'compact' : 'standard',
-      minimumFractionDigits: variant === 'compact' ? 0 : (format.decimals ?? 2),
-      maximumFractionDigits: variant === 'compact' ? 1 : (format.decimals ?? 2),
-    })
+
+    // The schema can only check that a currency code is three characters. Intl decides whether
+    // it is a currency, and says so by throwing, which must not escape a function whose whole
+    // contract is to hand back a reason instead.
+    let formatter: Intl.NumberFormat
+    try {
+      formatter = new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency,
+        notation: variant === 'compact' ? 'compact' : 'standard',
+        minimumFractionDigits: variant === 'compact' ? 0 : (format.decimals ?? 2),
+        maximumFractionDigits: variant === 'compact' ? 1 : (format.decimals ?? 2),
+      })
+    } catch {
+      return err(`"${currency}" is not a currency code this browser knows`)
+    }
 
     return ok((value) =>
       typeof value === 'number'
@@ -56,13 +65,26 @@ export function resolveFormatter(
     )
   }
 
+  // Percent multiplies by a hundred, which is a claim about the number, not a way of writing it.
+  if (format.style === 'percent' && field.unit !== 'percent') {
+    return err(
+      `percent formatting multiplies by a hundred, and "${field.name}" does not hold a percentage`,
+    )
+  }
+
   const isCompact = format.style === 'compact' || variant === 'compact'
-  const formatter = new Intl.NumberFormat(undefined, {
-    notation: isCompact ? 'compact' : 'standard',
-    style: format.style === 'percent' ? 'percent' : 'decimal',
-    minimumFractionDigits: isCompact ? 0 : format.decimals,
-    maximumFractionDigits: isCompact ? 1 : (format.decimals ?? 2),
-  })
+
+  let formatter: Intl.NumberFormat
+  try {
+    formatter = new Intl.NumberFormat(undefined, {
+      notation: isCompact ? 'compact' : 'standard',
+      style: format.style === 'percent' ? 'percent' : 'decimal',
+      minimumFractionDigits: isCompact ? 0 : format.decimals,
+      maximumFractionDigits: isCompact ? 1 : (format.decimals ?? 2),
+    })
+  } catch {
+    return err('this browser refused that number format')
+  }
 
   return ok((value) =>
     typeof value === 'number' ? formatter.format(value) : formatByType(value, field),
